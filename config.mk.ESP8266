@@ -67,6 +67,7 @@ AS := xtensa-lx106-elf-gcc-5.2.0
 LD := xtensa-lx106-elf-gcc-5.2.0
 OBJCOPY := xtensa-lx106-elf-objcopy
 OBJDUMP := xtensa-lx106-elf-objdump
+ARCHIVER := xtensa-lx106-elf-ar
 SIZE := xtensa-lx106-elf-size
 
 FLASHER := esptool

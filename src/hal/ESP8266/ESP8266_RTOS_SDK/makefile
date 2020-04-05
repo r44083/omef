@@ -172,11 +172,11 @@ LIBDIR := components/esp8266/lib \
 	components/newlib/newlib/lib \
 	../../../../build/obj/src/hal/ESP8266/ESP8266_RTOS_SDK # Workaround to link libraries from build dir
 
-LIBS_TO_BUILD := esp8266 freertos heap log lwip newlib nvs_flash spi_flash \
+LIB_TO_BUILD := esp8266 freertos heap log lwip newlib nvs_flash spi_flash \
 	tcpip_adapter util wpa_supplicant
 
 LIB := stdc++ c_nano m core_dbg espnow gcc hal net80211 phy pp_dbg smartconfig ssc \
-	wpa wps $(LIBS_TO_BUILD)
+	wpa wps $(LIB_TO_BUILD)
 
 LINKED_OBJ :=
 
@@ -205,37 +205,37 @@ clean:
 
 .SECONDEXPANSION:
 $(OBJDIR)/libesp8266.a: $(call GET_OBJ, $(ESP8266_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libfreertos.a: $(call GET_OBJ, $(FREERTOS_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libheap.a: $(call GET_OBJ, $(HEAP_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/liblog.a: $(call GET_OBJ, $(LOG_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/liblwip.a: $(call GET_OBJ, $(LWIP_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libnewlib.a: $(call GET_OBJ, $(NEWLIB_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libnvs_flash.a: $(call GET_OBJ, $(NVS_FLASH_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libspi_flash.a: $(call GET_OBJ, $(SPI_FLASH_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libtcpip_adapter.a: $(call GET_OBJ, $(TCPIP_ADAPTER_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libutil.a: $(call GET_OBJ, $(UTIL_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/libwpa_supplicant.a: $(call GET_OBJ, $(WPA_SUPPLICANT_SRC))
-	xtensa-lx106-elf-gcc-ar cru $@ $^
+	$(ARCHIVER) cru $@ $^
 
 $(OBJDIR)/%.c.o: %.c | $$(@D)/.f
 	$(CC) $(DEF) $(INC) $(C_CPP_FLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
