@@ -14,7 +14,7 @@
 /* 4. Don't change any other seg.                                                                     */
 /* 5. user1.bin and user2.bin are same in this mode, so upgrade only need one of them.                */
 
-#include "sdkconfig.h"
+/* #include "sdkconfig.h" */
 
 MEMORY
 {
@@ -24,10 +24,10 @@ MEMORY
   dram0_0_seg  :    org = 0x3FFE8000, len = 0x18000
 
   /* Functions which are critical should be put in this segment. */
-  iram1_0_seg  :    org = 0x40100000, len = CONFIG_SOC_IRAM_SIZE
+  iram1_0_seg  :    org = 0x40100000, len = 0xC000
 
   /* It is actually mapped to flash. */
-  irom0_0_seg  :    org = 0x40200010 + APP_OFFSET, len = APP_SIZE - 0x10
+  irom0_0_seg  :    org = 0x40200000 + 0x10000, len = 4M
 
   /* RTC memory, persists over deep sleep. */
   rtc_seg      :    org = 0x60001200, len = 0x200

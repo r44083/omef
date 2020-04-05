@@ -21,21 +21,21 @@
 #include "esp8266/pin_mux_register.h"
 #include "esp8266/spi_register.h"
 
-__attribute__((section(".iram1"))) void Cache_Read_Disable_2(void)
+void Cache_Read_Disable_2(void)
 {
     CLEAR_PERI_REG_MASK(CACHE_FLASH_CTRL_REG,CACHE_READ_EN_BIT);
     while(REG_READ(SPI_EXT2(0)) != 0) { }
     CLEAR_PERI_REG_MASK(PERIPHS_SPI_FLASH_CTRL,SPI_ENABLE_AHB);
 }
 
-__attribute__((section(".iram1"))) void Cache_Read_Enable_2()
+void Cache_Read_Enable_2()
 {
     SET_PERI_REG_MASK(PERIPHS_SPI_FLASH_CTRL,SPI_ENABLE_AHB);
     SET_PERI_REG_MASK(CACHE_FLASH_CTRL_REG,CACHE_READ_EN_BIT);
 }
 void Cache_Read_Enable_New(void) __attribute__((alias("Cache_Read_Enable_2")));
 
-__attribute__((section(".iram1"))) uint32_t spi_flash_get_id_raw(esp_rom_spiflash_chip_t *chip)
+uint32_t spi_flash_get_id_raw(esp_rom_spiflash_chip_t *chip)
 {
     uint32_t rdid = 0;
 
@@ -105,7 +105,7 @@ esp_err_t spi_flash_erase_sector_raw(esp_rom_spiflash_chip_t *chip, size_t sec, 
     return ret;
 }
 
-__attribute__((section(".iram1"))) esp_err_t spi_flash_enable_qmode_raw(esp_rom_spiflash_chip_t *chip)
+esp_err_t spi_flash_enable_qmode_raw(esp_rom_spiflash_chip_t *chip)
 {
     esp_err_t ret;
 

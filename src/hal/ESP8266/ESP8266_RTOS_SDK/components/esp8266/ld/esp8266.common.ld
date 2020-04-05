@@ -1,7 +1,7 @@
 /* This linker script generated from xt-genldscripts.tpp for LSP . */
 /* Linker Script for ld -N */
 
-#include "sdkconfig.h"
+/* #include "sdkconfig.h" */
 
 PHDRS
 {
@@ -106,17 +106,22 @@ SECTIONS
     *(.init)
     *(.iram1 .iram1.*)
     *libspi_flash.a:spi_flash_raw.*(.literal .text .literal.* .text.*)
+/*
 #ifdef CONFIG_ESP8266_WIFI_DEBUG_LOG_ENABLE
+*/
     *libpp_dbg.a:(.literal .text .literal.* .text.*)
+/*
 #else
     *libpp.a:(.literal .text .literal.* .text.*)
 #endif
+*/
     *libphy.a:(.literal .text .literal.* .text.*)
     *(.literal .text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
     *(.fini.literal)
     *(.fini)
     *(.gnu.version)
 
+/*
 #ifdef CONFIG_LWIP_GLOBAL_DATA_LINK_IRAM
     *liblwip.a:(.bss .data .bss.* .data.* COMMON)
 #endif
@@ -132,16 +137,21 @@ SECTIONS
     *libcore.a:(.bss .data .bss.* .data.* COMMON)
 #endif
 #endif
+*/
 
+/*
 #ifdef CONFIG_FREERTOS_GLOBAL_DATA_LINK_IRAM
+*/
     *libfreertos.a:tasks.*(.bss .data .bss.* .data.* COMMON)
     *libfreertos.a:timers.*(.bss .data .bss.* .data.* COMMON)
     *libfreertos.a:freertos_hooks.*(.bss .data .bss.* .data.* COMMON)
+/*
 #endif
 
 #ifdef CONFIG_LINK_ETS_PRINTF_TO_IRAM
     *libesp8266.a:ets_printf.*(.literal .text .literal.* .text.* .rodata.* .rodata)
 #endif
+*/
 
     _text_end = ABSOLUTE(.);
     _etext = .;
@@ -165,11 +175,15 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
+/*
 #ifdef CONFIG_ESP8266_WIFI_DEBUG_LOG_ENABLE
+*/
     *libpp_dbg.a:(.rodata.* .rodata)
+/*
 #else
     *libpp.a:(.rodata.* .rodata)
 #endif
+*/
     *liblog.a:(.rodata.* .rodata)
     *(.gnu.linkonce.r.*)
     *(.rodata1)

@@ -56,9 +56,6 @@ ifeq ($(FLASHER),ST-LINK_CLI)
 endif
 ifeq ($(FLASHER),esptool)
 	$(FLASHER) $(ESPTOOL_PARAM) erase_flash
-	$(FLASHER) $(ESPTOOL_PARAM) write_flash \
-	0xfc000 src/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/firmware/esp_init_data_default.bin \
-	0xfe000 src/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/firmware/blank.bin
 endif
 
 flash:

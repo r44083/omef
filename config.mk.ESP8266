@@ -50,11 +50,11 @@ GLOBAL_CPPFLAGS := -std=c++11 \
 
 GLOBAL_AFLAGS := -g3
 
-LDFLAGS := -Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/esp8266.ld \
-	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/esp8266.common.ld \
-	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/esp8266.peripherals.ld \
-	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/esp8266.rom.ld \
-	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/rom_8266.ld \
+LDFLAGS := -Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/ld/esp8266.peripherals.ld \
+	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/ld/esp8266.rom.ld \
+	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/components/esptool_py/esptool/flasher_stub/rom_8266.ld \
+	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/ld/esp8266.ld \
+	-Tsrc/hal/ESP8266/ESP8266_RTOS_SDK/components/esp8266/ld/esp8266.common.ld \
 	\
 	-nostdlib \
 	-u call_user_start \
@@ -71,7 +71,7 @@ SIZE := xtensa-lx106-elf-size
 
 FLASHER := esptool
 
-ESPTOOL_PARAM := --port COM6 --baud 512000 --chip esp8266
+ESPTOOL_PARAM := --chip esp8266 --port COM6 --baud 512000 --before default_reset --after hard_reset
 
 ifeq ($(OS),Windows_NT)
 
