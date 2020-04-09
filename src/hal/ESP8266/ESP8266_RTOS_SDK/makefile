@@ -205,37 +205,37 @@ clean:
 
 .SECONDEXPANSION:
 $(OBJDIR)/libesp8266.a: $(call GET_OBJ, $(ESP8266_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libfreertos.a: $(call GET_OBJ, $(FREERTOS_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libheap.a: $(call GET_OBJ, $(HEAP_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/liblog.a: $(call GET_OBJ, $(LOG_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/liblwip.a: $(call GET_OBJ, $(LWIP_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libnewlib.a: $(call GET_OBJ, $(NEWLIB_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libnvs_flash.a: $(call GET_OBJ, $(NVS_FLASH_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libspi_flash.a: $(call GET_OBJ, $(SPI_FLASH_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libtcpip_adapter.a: $(call GET_OBJ, $(TCPIP_ADAPTER_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libutil.a: $(call GET_OBJ, $(UTIL_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/libwpa_supplicant.a: $(call GET_OBJ, $(WPA_SUPPLICANT_SRC))
-	$(ARCHIVER) cru $@ $^
+	$(AR) cru $@ $^
 
 $(OBJDIR)/%.c.o: %.c | $$(@D)/.f
 	$(CC) $(DEF) $(INC) $(C_CPP_FLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
