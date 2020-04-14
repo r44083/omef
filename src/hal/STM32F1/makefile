@@ -7,6 +7,7 @@ SRC := adc/adc.cpp \
 	gpio/gpio.cpp \
 	pwm/pwm.cpp \
 	rcc/rcc.cpp \
+	spi/spi.cpp \
 	systick/systick.cpp \
 	tim/tim.cpp \
 	uart/uart.cpp \
