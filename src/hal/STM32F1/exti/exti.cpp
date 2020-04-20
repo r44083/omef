@@ -45,17 +45,12 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	EXTI->IMR &= ~line_bit;
 	
 	/* Setup EXTI trigger */
-	EXTI->RTSR &= ~line_bit;
-	EXTI->FTSR &= ~line_bit;
+	EXTI->RTSR |= line_bit;
+	EXTI->FTSR |= line_bit;
 	if(_trigger == TRIGGER_RISING)
-		EXTI->RTSR |= line_bit;
+		EXTI->FTSR &= ~line_bit;
 	else if(_trigger == TRIGGER_FALLING)
-		EXTI->FTSR |= line_bit;
-	else
-	{
-		EXTI->RTSR |= line_bit;
-		EXTI->FTSR |= line_bit;
-	}
+		EXTI->RTSR &= ~line_bit;
 	
 	obj_list[pin] = this;
 	
@@ -109,15 +104,12 @@ void exti::trigger(trigger_t trigger)
 	_trigger = trigger;
 	uint32_t line_bit = 1 << _gpio.pin();
 	
+	EXTI->RTSR |= line_bit;
+	EXTI->FTSR |= line_bit;
 	if(_trigger == TRIGGER_RISING)
-		EXTI->RTSR |= line_bit;
+		EXTI->FTSR &= ~line_bit;
 	else if(_trigger == TRIGGER_FALLING)
-		EXTI->FTSR |= line_bit;
-	else
-	{
-		EXTI->RTSR |= line_bit;
-		EXTI->FTSR |= line_bit;
-	}
+		EXTI->RTSR &= ~line_bit;
 }
 
 extern "C" void exti_irq_hndlr(hal::exti *obj)
