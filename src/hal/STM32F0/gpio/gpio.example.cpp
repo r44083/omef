@@ -19,8 +19,7 @@ int main(void)
 {
 	static gpio green_led(2, 9, gpio::MODE_DO, 0);
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1,
-		&green_led, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	ASSERT(xTaskCreate(main_task, "main", 50, &green_led, 1, NULL) == pdPASS);
 	
 	vTaskStartScheduler();
 }

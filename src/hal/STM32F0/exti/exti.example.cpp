@@ -29,12 +29,11 @@ int main(void)
 	static gpio blue_led(2, 7, gpio::MODE_DO, 0);
 	static gpio exti1_gpio(0, 0, gpio::MODE_DI, 0);
 	
-	static exti exti1(exti1_gpio, exti::TRIGGER_FALLING);
+	static exti exti1(exti1_gpio, exti::TRIGGER_RISING);
 	exti1.cb(exti_cb, &blue_led);
 	exti1.on();
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1,
-		&green_led, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	ASSERT(xTaskCreate(main_task, "main", 50, &green_led, 1, NULL) == pdPASS);
 	
 	vTaskStartScheduler();
 }
