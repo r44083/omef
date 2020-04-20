@@ -12,46 +12,10 @@ using namespace hal;
 
 static IRQn_Type const irq_list[PIN_QTY] =
 {
-	EXTI0_IRQn, EXTI1_IRQn, EXTI2_IRQn,
-	EXTI3_IRQn, EXTI4_IRQn, EXTI9_5_IRQn,
-	EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn,
-	EXTI9_5_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn,
-	EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn,
+	EXTI0_IRQn, EXTI1_IRQn, EXTI2_IRQn, EXTI3_IRQn, EXTI4_IRQn, EXTI9_5_IRQn,
+	EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI15_10_IRQn,
+	EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn,
 	EXTI15_10_IRQn
-};
-
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC, GPIOD,
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
-	defined(STM32F101xE) || defined(STM32F101xG) || defined(STM32F103xB) || \
-	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
-	defined(STM32F107xC)
-	GPIOE,
-#else
-	NULL,
-#endif
-#if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
-	defined(STM32F103xE) || defined(STM32F103xG)
-	GPIOF, GPIOG
-#else
-	NULL, NULL
-#endif
-};
-
-static uint32_t const port_list[PORT_QTY] =
-{
-	AFIO_EXTICR1_EXTI0_PA, AFIO_EXTICR1_EXTI0_PB, AFIO_EXTICR1_EXTI0_PC,
-	AFIO_EXTICR1_EXTI0_PD, AFIO_EXTICR1_EXTI0_PE, AFIO_EXTICR1_EXTI0_PF,
-	AFIO_EXTICR1_EXTI0_PG
-};
-
-static uint8_t const src_offset_list[PIN_QTY] =
-{
-	0, 4, 8,
-	0, 4, 8,
-	0, 4, 8,
-	0, 4, 8
 };
 
 static exti *obj_list[PIN_QTY];
@@ -65,16 +29,15 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	ASSERT(_trigger <= TRIGGER_BOTH);
 	ASSERT(_gpio.mode() == gpio::MODE_DI);
 	
-	//gpio_af_init(_gpio);
-	
 	/* Enable clock */
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
 	
-	/* Setup EXTI line source */
 	uint8_t pin = _gpio.pin();
-	uint8_t exti_src = src_offset_list[pin];
-	AFIO->EXTICR[pin / 2] &= ~(0x0F << exti_src);
-	AFIO->EXTICR[pin / 2] |= port_list[_gpio.port()] << exti_src;
+	
+	/* Setup EXTI line source */
+	uint8_t exticr_source_offset = (pin % 4) * 4;
+	AFIO->EXTICR[pin / 4] &= ~(AFIO_EXTICR1_EXTI0 << exticr_source_offset);
+	AFIO->EXTICR[pin / 4] |= _gpio.port() << exticr_source_offset;
 	
 	uint32_t line_bit = 1 << pin;
 	/* Setup EXTI mask regs */
@@ -103,7 +66,14 @@ exti::exti(gpio &gpio, trigger_t trigger):
 
 exti::~exti()
 {
+	uint8_t pin = _gpio.pin();
 	
+	obj_list[pin] = NULL;
+	
+	EXTI->IMR &= ~(1 << _gpio.pin());
+	_cb = NULL;
+	uint8_t exticr_source_offset = (pin % 4) * 4;
+	AFIO->EXTICR[pin / 4] &= ~(AFIO_EXTICR1_EXTI0 << exticr_source_offset);
 }
 
 void exti::cb(cb_t cb, void *ctx)

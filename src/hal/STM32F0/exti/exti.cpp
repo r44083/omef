@@ -9,69 +9,16 @@
 using namespace hal;
 
 #define IRQ_PRIORITY 3
-#define GPIO_AF_15_EVENTOUT 0x0F
 
 static IRQn_Type const irq_list[PIN_QTY] =
 {
-	EXTI0_1_IRQn, EXTI0_1_IRQn, EXTI2_3_IRQn,
-	EXTI2_3_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
-	EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
-	EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
-	EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
+	EXTI0_1_IRQn, EXTI0_1_IRQn, EXTI2_3_IRQn, EXTI2_3_IRQn, EXTI4_15_IRQn,
+	EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
+	EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn, EXTI4_15_IRQn,
 	EXTI4_15_IRQn
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC,
-#if defined(STM32F030x6) || defined(STM32F030x8) || defined(STM32F030xC) || \
-	defined(STM32F051x8) || defined(STM32F058xx) || defined(STM32F070x6) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	GPIOD,
-#else
-	NULL,
-#endif
-#if defined(STM32F071xB) || defined(STM32F072xB) || defined(STM32F078xx) || \
-	defined(STM32F091xC) || defined(STM32F098xx)
-	GPIOE,
-#else
-	NULL,
-#endif
-	GPIOF
-};
-
-static uint32_t const port_list[PORT_QTY] =
-{
-	SYSCFG_EXTICR1_EXTI0_PA, SYSCFG_EXTICR1_EXTI0_PB, SYSCFG_EXTICR1_EXTI0_PC,
-#if defined(STM32F030x6) || defined(STM32F030x8) || defined(STM32F030xC) || \
-	defined(STM32F051x8) || defined(STM32F058xx) || defined(STM32F070x6) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	SYSCFG_EXTICR1_EXTI0_PD,
-#else
-	0,
-#endif
-#if defined(STM32F071xB) || defined(STM32F072xB) || defined(STM32F078xx) || \
-	defined(STM32F091xC) || defined(STM32F098xx)
-	SYSCFG_EXTICR1_EXTI0_PE,
-#else
-	0,
-#endif
-	SYSCFG_EXTICR1_EXTI0_PF
-};
-
-static uint8_t const src_offset_list[PIN_QTY] =
-{
-	0, 4, 8,
-	0, 4, 8,
-	0, 4, 8,
-	0, 4, 8
-};
-
 static exti *obj_list[PIN_QTY];
-
-static void gpio_af_init(gpio &gpio);
 
 exti::exti(gpio &gpio, trigger_t trigger):
 	_gpio(gpio),
@@ -82,16 +29,15 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	ASSERT(_trigger <= TRIGGER_BOTH);
 	ASSERT(_gpio.mode() == gpio::MODE_DI);
 	
-	gpio_af_init(_gpio);
-	
 	/* Enable clock */
-	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
+	
+	uint8_t pin = _gpio.pin();
 	
 	/* Setup EXTI line source */
-	uint8_t pin = _gpio.pin();
-	uint8_t exti_src = src_offset_list[pin];
-	SYSCFG->EXTICR[pin / 2] &= ~(0x0F << exti_src);
-	SYSCFG->EXTICR[pin / 2] |= port_list[_gpio.port()] << exti_src;
+	uint8_t exticr_source_offset = (pin % 4) * 4;
+	SYSCFG->EXTICR[pin / 4] &= ~(SYSCFG_EXTICR1_EXTI0 << exticr_source_offset);
+	SYSCFG->EXTICR[pin / 4] |= _gpio.port() << exticr_source_offset;
 	
 	uint32_t line_bit = 1 << pin;
 	/* Setup EXTI mask regs */
@@ -120,7 +66,14 @@ exti::exti(gpio &gpio, trigger_t trigger):
 
 exti::~exti()
 {
+	uint8_t pin = _gpio.pin();
 	
+	obj_list[pin] = NULL;
+	
+	EXTI->IMR &= ~(1 << _gpio.pin());
+	_cb = NULL;
+	uint8_t exticr_source_offset = (pin % 4) * 4;
+	SYSCFG->EXTICR[pin / 4] &= ~(SYSCFG_EXTICR1_EXTI0 << exticr_source_offset);
 }
 
 void exti::cb(cb_t cb, void *ctx)
