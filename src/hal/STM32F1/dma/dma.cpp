@@ -12,9 +12,8 @@ using namespace hal;
 static DMA_Channel_TypeDef *const ch_list[dma::DMA_END][dma::CH_END] =
 {
 	{
-		DMA1_Channel1, DMA1_Channel2, DMA1_Channel3,
-		DMA1_Channel4, DMA1_Channel5, DMA1_Channel6,
-		DMA1_Channel7
+		DMA1_Channel1, DMA1_Channel2, DMA1_Channel3, DMA1_Channel4,
+		DMA1_Channel5, DMA1_Channel6, DMA1_Channel7
 	},
 	{
 #if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
@@ -101,19 +100,22 @@ dma::dma(dma_t dma, ch_t ch, dir_t dir, inc_size_t inc_size):
 	DMA_Channel_TypeDef *dma_ch = ch_list[_dma][_ch];
 	dma_ch->CCR &= ~DMA_CCR_EN;
 	
-	volatile uint32_t *isr_clr_reg;
 	if(_dma == DMA_1)
-		isr_clr_reg = &DMA1->IFCR;
+	{
+		DMA1->IFCR = (DMA_IFCR_CGIF1 | DMA_IFCR_CTCIF1 | DMA_IFCR_CHTIF1 |
+			DMA_IFCR_CTEIF1) << (_ch * 4);
+	}
 	else
 #if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
 	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
 	defined(STM32F107xC)
-		isr_clr_reg = &DMA2->IFCR;
+	{
+		DMA2->IFCR = (DMA_IFCR_CGIF1 | DMA_IFCR_CTCIF1 | DMA_IFCR_CHTIF1 |
+			DMA_IFCR_CTEIF1) << (_ch * 4);
+	}
 #else
 		ASSERT(0);
 #endif
-	*isr_clr_reg = (DMA_IFCR_CGIF1 | DMA_IFCR_CTCIF1 | DMA_IFCR_CHTIF1 |
-		DMA_IFCR_CTEIF1) << (_ch * 4);
 	
 	/* Setup data direction. Default is peripheral to memory */
 	dma_ch->CCR &= ~(DMA_CCR_DIR | DMA_CCR_MEM2MEM);
@@ -144,7 +146,11 @@ dma::dma(dma_t dma, ch_t ch, dir_t dir, inc_size_t inc_size):
 
 dma::~dma()
 {
+	_cb = NULL;
+	obj_list[_dma][_ch] = NULL;
 	
+	NVIC_DisableIRQ(irq_list[_dma][_ch]);
+	ch_list[_dma][_ch]->CCR &= ~DMA_CCR_EN;
 }
 
 void dma::src(void *src)
@@ -261,18 +267,16 @@ void dma::start_once(cb_t cb, void *ctx)
 	dma_ch->CCR &= ~DMA_CCR_CIRC;
 	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
-	volatile uint32_t *isr_clr_reg;
 	if(_dma == DMA_1)
-		isr_clr_reg = &DMA1->IFCR;
+		DMA1->IFCR = DMA_IFCR_CTCIF1 << (_ch * 4);
 	else
 #if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
 	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
 	defined(STM32F107xC)
-		isr_clr_reg = &DMA2->IFCR;
+		DMA2->IFCR = DMA_IFCR_CTCIF1 << (_ch * 4);
 #else
 		ASSERT(0);
 #endif
-	*isr_clr_reg = DMA_IFCR_CTCIF1 << (_ch * 4);
 	
 	NVIC_EnableIRQ(irq_list[_dma][_ch]);
 	dma_ch->CCR |= DMA_CCR_EN;
@@ -295,18 +299,16 @@ void dma::start_cyclic(cb_t cb, void *ctx)
 	dma_ch->CCR |= DMA_CCR_CIRC;
 	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
-	volatile uint32_t *isr_clr_reg;
 	if(_dma == DMA_1)
-		isr_clr_reg = &DMA1->IFCR;
+		DMA1->IFCR = DMA_IFCR_CTCIF1 << (_ch * 4);
 	else
 #if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
 	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
 	defined(STM32F107xC)
-		isr_clr_reg = &DMA2->IFCR;
+		DMA2->IFCR = DMA_IFCR_CTCIF1 << (_ch * 4);
 #else
 		ASSERT(0);
 #endif
-	*isr_clr_reg = DMA_IFCR_CTCIF1 << (_ch * 4);
 	
 	NVIC_EnableIRQ(irq_list[_dma][_ch]);
 	dma_ch->CCR |= DMA_CCR_EN;

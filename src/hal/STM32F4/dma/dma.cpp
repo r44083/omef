@@ -13,14 +13,12 @@ using namespace hal;
 static DMA_Stream_TypeDef *const stream_list[dma::DMA_END][dma::STREAM_END] =
 {
 	{
-		DMA1_Stream0, DMA1_Stream1, DMA1_Stream2,
-		DMA1_Stream3, DMA1_Stream4, DMA1_Stream5,
-		DMA1_Stream6, DMA1_Stream7
+		DMA1_Stream0, DMA1_Stream1, DMA1_Stream2, DMA1_Stream3, DMA1_Stream4,
+		DMA1_Stream5, DMA1_Stream6, DMA1_Stream7
 	},
 	{
-		DMA2_Stream0, DMA2_Stream1, DMA2_Stream2,
-		DMA2_Stream3, DMA2_Stream4, DMA2_Stream5,
-		DMA2_Stream6, DMA2_Stream7
+		DMA2_Stream0, DMA2_Stream1, DMA2_Stream2, DMA2_Stream3, DMA2_Stream4,
+		DMA2_Stream5, DMA2_Stream6, DMA2_Stream7
 	}
 };
 
@@ -41,28 +39,24 @@ static IRQn_Type const irq_list[dma::DMA_END][dma::STREAM_END] =
 static volatile uint32_t *const isr_list[dma::DMA_END][dma::STREAM_END] =
 {
 	{
-		&DMA1->LISR, &DMA1->LISR, &DMA1->LISR,
-		&DMA1->LISR, &DMA1->HISR, &DMA1->HISR,
-		&DMA1->HISR, &DMA1->HISR
+		&DMA1->LISR, &DMA1->LISR, &DMA1->LISR, &DMA1->LISR, &DMA1->HISR,
+		&DMA1->HISR, &DMA1->HISR, &DMA1->HISR
 	},
 	{
-		&DMA2->LISR, &DMA2->LISR, &DMA2->LISR,
-		&DMA2->LISR, &DMA2->HISR, &DMA2->HISR,
-		&DMA2->HISR, &DMA2->HISR
+		&DMA2->LISR, &DMA2->LISR, &DMA2->LISR, &DMA2->LISR, &DMA2->HISR,
+		&DMA2->HISR, &DMA2->HISR, &DMA2->HISR
 	}
 };
 
 static volatile uint32_t *const isr_clr_list[dma::DMA_END][dma::STREAM_END] =
 {
 	{
-		&DMA1->LIFCR, &DMA1->LIFCR, &DMA1->LIFCR,
-		&DMA1->LIFCR, &DMA1->HIFCR, &DMA1->HIFCR,
-		&DMA1->HIFCR, &DMA1->HIFCR
+		&DMA1->LIFCR, &DMA1->LIFCR, &DMA1->LIFCR, &DMA1->LIFCR, &DMA1->HIFCR,
+		&DMA1->HIFCR, &DMA1->HIFCR, &DMA1->HIFCR
 	},
 	{
-		&DMA2->LIFCR, &DMA2->LIFCR, &DMA2->LIFCR,
-		&DMA2->LIFCR, &DMA2->HIFCR, &DMA2->HIFCR,
-		&DMA2->HIFCR, &DMA2->HIFCR
+		&DMA2->LIFCR, &DMA2->LIFCR, &DMA2->LIFCR, &DMA2->LIFCR, &DMA2->HIFCR,
+		&DMA2->HIFCR, &DMA2->HIFCR, &DMA2->HIFCR
 	}
 };
 
@@ -102,9 +96,9 @@ dma::dma(dma_t dma, stream_t stream, ch_t ch, dir_t dir, inc_size_t inc_size):
 	dma_stream->CR &= ~DMA_SxCR_EN;
 	
 	/* Clear isr reg flags */
-	volatile uint32_t *isr_clr_reg = isr_clr_list[_dma][_stream];
-	*isr_clr_reg = (DMA_LIFCR_CFEIF0 | DMA_LIFCR_CDMEIF0 | DMA_LIFCR_CTEIF0 |
-		DMA_LIFCR_CHTIF0 | DMA_LIFCR_CTCIF0) << isr_shift_list[_stream];
+	isr_clr_list[_dma][_stream] = (DMA_LIFCR_CFEIF0 | DMA_LIFCR_CDMEIF0 |
+		DMA_LIFCR_CTEIF0 | DMA_LIFCR_CHTIF0 | DMA_LIFCR_CTCIF0) <<
+		isr_shift_list[_stream];
 	
 	/* Setup channel */
 	dma_stream->CR &= ~DMA_SxCR_CHSEL;
@@ -146,7 +140,11 @@ dma::dma(dma_t dma, stream_t stream, ch_t ch, dir_t dir, inc_size_t inc_size):
 
 dma::~dma()
 {
+	_cb = NULL;
+	obj_list[_dma][_stream] = NULL;
 	
+	NVIC_DisableIRQ(irq_list[_dma][_stream]);
+	stream_list[_dma][_stream]->CR &= ~DMA_SxCR_EN;
 }
 
 void dma::src(void *src)
@@ -260,9 +258,10 @@ void dma::start_once(cb_t cb, void *ctx)
 	
 	/* Disable circular mode */
 	dma_stream->CR &= ~DMA_SxCR_CIRC;
+	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
-	volatile uint32_t *isr_clr_reg = isr_clr_list[_dma][_stream];
-	*isr_clr_reg = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
+	
+	isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
 	NVIC_EnableIRQ(irq_list[_dma][_stream]);
 	dma_stream->CR |= DMA_SxCR_EN;
 }
@@ -282,9 +281,9 @@ void dma::start_cyclic(cb_t cb, void *ctx)
 	
 	/* Enable circular mode */
 	dma_stream->CR |= DMA_SxCR_CIRC;
+	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
-	volatile uint32_t *isr_clr_reg = isr_clr_list[_dma][_stream];
-	*isr_clr_reg = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
+	isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
 	NVIC_EnableIRQ(irq_list[_dma][_stream]);
 	dma_stream->CR |= DMA_SxCR_EN;
 }
