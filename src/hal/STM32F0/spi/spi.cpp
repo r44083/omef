@@ -534,7 +534,14 @@ extern "C" void spi_irq_hndlr(hal::spi *obj)
 		obj->irq_res = spi::RES_OK;
 	}
 	else if((spi->CR2 & SPI_CR2_ERRIE) &&
+#if defined(STM32F031x6) || defined(STM32F038xx) || defined(STM32F042x6) || \
+	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
+	defined(STM32F071xB) || defined(STM32F072xB) || defined(STM32F078xx) || \
+	defined(STM32F091xC) || defined(STM32F098xx)
 		(sr & (SPI_SR_UDR | SPI_SR_MODF | SPI_SR_OVR)))
+#else
+		(sr & (SPI_SR_MODF | SPI_SR_OVR)))
+#endif
 	{
 		spi->CR2 &= ~(SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN);
 		if(obj->tx_buff)
