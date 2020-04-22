@@ -363,6 +363,7 @@ int8_t spi::read(void *buff, uint16_t size, gpio *cs)
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(size);
 	tx_dma.start_once(on_dma_tx, this);
+	volatile uint8_t dr = spi_list[_spi]->DR;
 	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 	
 	// Task will be unlocked later from isr
