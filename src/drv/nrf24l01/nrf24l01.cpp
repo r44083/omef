@@ -7,13 +7,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-constexpr auto power_on_reset_timeout = 100; // ms
-constexpr auto powerdown_to_standby1_timeout = 1500; // us
-constexpr auto standby1_to_rxtx_timeout = 130; // us
-constexpr auto transmit_max_timeout = 60; // ARD_4000_US * 15 retries = 60 ms
-constexpr auto addr_max_size = 5;
-constexpr auto addr_min_size = 1;
-
 using namespace drv;
 using namespace nrf24l01_priv;
 
@@ -69,7 +62,7 @@ int8_t nrf24l01::init()
 	config_reg_t config = {.crco = _2_BYTE, .en_crc = 1};
 	if((res = write_reg(reg::CONFIG, &config)))
 		return res;
-	conf._mode = mode::PWR_DOWN;
+	conf.mode = mode::PWR_DOWN;
 	
 	// Disable all rx data pipes, since pipe 0 and 1 are enabled by default
 	uint8_t en_rxaddr = 0;
@@ -155,7 +148,7 @@ int8_t nrf24l01::read(rx_packet_t &packet, uint8_t tx_ack[fifo_size])
 	
 	if(fifo_status.rx_empty)
 	{
-		if(conf._mode != mode::RX)
+		if(conf.mode != mode::RX)
 		{
 			if((res = set_mode(mode::RX)))
 				return res;
@@ -276,7 +269,7 @@ int8_t nrf24l01::write(void *buff, size_t size, void *ack_payload,
 	
 	int8_t res;
 	
-	if(conf._mode != mode::TX)
+	if(conf.mode != mode::TX)
 	{
 		if((res = set_mode(mode::TX)))
 		{
@@ -429,13 +422,13 @@ int8_t nrf24l01::exec_instruction_with_write(instruction instruction,
 	return RES_OK;
 }
 
-int8_t nrf24l01::set_mode(mode new_mode)
+int8_t nrf24l01::set_mode(mode mode)
 {
 	int8_t res;
 	config_reg_t config;
 	uint32_t us_wait = 0;
 	
-	switch(new_mode)
+	switch(mode)
 	{
 		case mode::PWR_DOWN:
 			_ce.set(0);
@@ -449,7 +442,7 @@ int8_t nrf24l01::set_mode(mode new_mode)
 		
 		case mode::STANDBY_1:
 			_ce.set(0);
-			if(conf._mode == mode::PWR_DOWN)
+			if(conf.mode == mode::PWR_DOWN)
 			{
 				if((res = read_reg(reg::CONFIG, &config)))
 					return res;
@@ -504,7 +497,7 @@ int8_t nrf24l01::set_mode(mode new_mode)
 	if(us_wait)
 		delay(us_wait);
 	
-	conf._mode = new_mode;
+	conf.mode = mode;
 	return RES_OK;
 }
 

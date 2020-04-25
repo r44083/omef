@@ -159,12 +159,12 @@ class nrf24l01
 			FLUSH_TX           = 0xE1,
 			FLUSH_RX           = 0xE2,
 			REUSE_TX_PL        = 0xE3,
-		#if NRF24L01_PLUS
+#if NRF24L01_PLUS
 			ACTIVATE           = 0x50,
 			R_RX_PL_WID        = 0x60,
 			W_ACK_PAYLOAD      = 0xA8,
 			W_TX_PAYLOAD_NOACK = 0xB0,
-		#endif
+#endif
 			NOP                = 0xFF
 		};
 		int8_t exec_instruction(instruction instruction);
@@ -174,7 +174,7 @@ class nrf24l01
 			size_t size);
 		
 		enum class mode { PWR_DOWN, STANDBY_1, TX, RX };
-		int8_t set_mode(mode new_mode);
+		int8_t set_mode(mode mode);
 		
 		void delay(uint32_t us);
 		
@@ -190,7 +190,7 @@ class nrf24l01
 		
 		struct
 		{
-			mode _mode;
+			enum mode mode;
 			struct
 			{
 				bool is_open;

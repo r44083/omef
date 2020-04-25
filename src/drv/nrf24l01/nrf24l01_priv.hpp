@@ -5,6 +5,13 @@
 
 namespace drv::nrf24l01_priv
 {
+constexpr auto power_on_reset_timeout = 100; // ms
+constexpr auto powerdown_to_standby1_timeout = 1500; // us
+constexpr auto standby1_to_rxtx_timeout = 130; // us
+constexpr auto transmit_max_timeout = 60; // ARD_4000_US * 15 retries = 60 ms
+constexpr auto addr_max_size = 5;
+constexpr auto addr_min_size = 1;
+
 enum prim_rx_t
 {
 	PTX,
