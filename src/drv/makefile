@@ -7,6 +7,7 @@ SRC := dataflash/dataflash.cpp \
 	enc/enc.cpp \
 	gps/nmea.cpp \
 	hd44780/hd44780.cpp \
+	nrf24l01/nrf24l01.cpp \
 	onewire/onewire.cpp \
 	sd/sd_spi.cpp \
 	sd/sd.cpp \
