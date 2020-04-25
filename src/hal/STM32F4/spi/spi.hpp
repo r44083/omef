@@ -99,4 +99,15 @@ class spi
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
 		friend void ::spi_irq_hndlr(spi *obj);
 };
+
+// Chip select helper class. Automatically put cs pin high in destructor
+class spi_cs
+{
+	public:
+		spi_cs(const hal::gpio &cs): _cs(cs) { _cs.set(0); }
+		~spi_cs() { _cs.set(1); }
+	
+	private:
+		const hal::gpio &_cs;
+};
 }
