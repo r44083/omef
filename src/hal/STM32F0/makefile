@@ -7,6 +7,7 @@ SRC := dma/dma.cpp \
 	spi/spi.cpp \
 	systick/systick.cpp \
 	tim/tim.cpp \
+	uart/uart.cpp \
 	wdt/wdt.cpp
 
 INC :=
