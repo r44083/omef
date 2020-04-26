@@ -1,7 +1,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "syslog.hpp"
 #include "common/assert.h"
 #include "third_party/printf/printf.h"
@@ -12,46 +11,6 @@ using namespace ul;
 
 #define EOL "\r\n"
 #define EOL_SIZE (sizeof(EOL) - 1)
-
-const static char *tags[] =
-{
-	"(dbg) ",
-	"(inf) ",
-	"(wrn) ",
-	"(err) "
-};
-
-static size_t add_timestamp(char *str)
-{
-	uint32_t ms = xTaskGetTickCount();// configTICK_RATE_HZ;
-	uint16_t sss =  ms % 1000;
-	uint8_t ss =   (ms / 1000) % 60;
-	uint8_t mm =   (ms / 1000 / 60) % 60;
-	uint8_t hh =   (ms / 1000 / 60 / 60) % 24;
-	uint8_t DD =   (ms / 1000 / 60 / 60 / 24) % 31;
-	uint8_t MM =   (ms / 1000 / 60 / 60 / 24 / 31) % 12;
-	uint16_t YYYY = ms / 1000 / 60 / 60 / 24 / 31 / 12;
-	
-	// ISO 8601 time
-	return sprintf_(str, "%04d-%02d-%02d %02d:%02d:%02d.%03d ",
-		YYYY, MM, DD, hh, mm, ss, sss);
-}
-
-static size_t add_tag(char *str, uint8_t tag)
-{
-	size_t len = strlen(tags[tag]);
-	
-	memcpy(str, tags[tag], len);
-	
-	return len;
-}
-
-static size_t add_eol(char *str)
-{
-	strcat(str, EOL);
-	
-	return EOL_SIZE;
-}
 
 syslog::syslog()
 {
@@ -143,4 +102,36 @@ void syslog::print(tag_t tag, const char *format, va_list va)
 	}
 	
 	xSemaphoreGive(api_lock);
+}
+
+size_t syslog::add_tag(char *str, uint8_t tag)
+{
+	size_t len = strlen(tags[tag]);
+	
+	memcpy(str, tags[tag], len);
+	
+	return len;
+}
+
+size_t syslog::add_eol(char *str)
+{
+	strcat(str, EOL);
+	
+	return EOL_SIZE;
+}
+
+size_t syslog::add_timestamp(char *str)
+{
+	uint32_t ms = xTaskGetTickCount();// configTICK_RATE_HZ;
+	uint16_t sss =  ms % 1000;
+	uint8_t ss =   (ms / 1000) % 60;
+	uint8_t mm =   (ms / 1000 / 60) % 60;
+	uint8_t hh =   (ms / 1000 / 60 / 60) % 24;
+	uint8_t DD =   (ms / 1000 / 60 / 60 / 24) % 31;
+	uint8_t MM =   (ms / 1000 / 60 / 60 / 24 / 31) % 12;
+	uint16_t YYYY = ms / 1000 / 60 / 60 / 24 / 31 / 12;
+	
+	// ISO 8601 time
+	return sprintf_(str, "%04d-%02d-%02d %02d:%02d:%02d.%03d ",
+		YYYY, MM, DD, hh, mm, ss, sss);
 }
