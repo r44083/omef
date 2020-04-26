@@ -87,6 +87,10 @@ class dma
 		
 		bool busy();
 		
+		dma_t get_dma() {return _dma;}
+		ch_t get_stream() {return _stream;}
+		ch_t get_ch() {return _ch;}
+		
 	private:
 		dma_t _dma;
 		stream_t _stream;
