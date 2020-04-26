@@ -12,7 +12,6 @@
 			"cwd": "${workspaceFolder}",
 			"externalConsole": true,
 			"internalConsoleOptions": "neverOpen",
-			"stopAtEntry": true,
 			"preLaunchTask": "gdbserver",
 			"setupCommands":
 			[
@@ -23,10 +22,6 @@
 				{
 					"description": "Reset target to get to a known state",
 					"text": "monitor reset"
-				},
-				{
-					"description": "Halt target to get to a known state",
-					"text": "monitor halt"
 				}
 			]
 		}

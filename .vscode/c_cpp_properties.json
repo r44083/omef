@@ -5,6 +5,9 @@
             "name": "omef",
             "includePath":
             [
+                "${workspaceFolder}/src/hal/STM32F4/**",
+                "${workspaceFolder}/src/third_party/FreeRTOS/include",
+                "${workspaceFolder}/src/third_party/FreeRTOS/portable/ARM_CM4",
                 "${workspaceFolder}/src/**"
             ],
             "defines":
