@@ -3,7 +3,6 @@ MODULES := src \
 	src/drv \
 	src/hal/STM32F4 \
 	src/hal/STM32F4/CMSIS \
-	src/third_party/FatFs \
 	src/third_party/FreeRTOS \
 	src/ul
 
