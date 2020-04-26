@@ -17,7 +17,7 @@ static SPI_TypeDef *const spi_list[spi::SPI_END] =
 	SPI1,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
 	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070x6) || defined(STM32F071xB) || defined(STM32F072xB) || \
+	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
 	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
 	SPI2,
 #else
@@ -30,7 +30,7 @@ static IRQn_Type const irq_list[spi::SPI_END] =
 	SPI1_IRQn,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
 	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070x6) || defined(STM32F071xB) || defined(STM32F072xB) || \
+	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
 	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
 	SPI2_IRQn,
 #else
@@ -43,7 +43,7 @@ static uint32_t const rcc_list[spi::SPI_END] =
 	RCC_APB2ENR_SPI1EN,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
 	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070x6) || defined(STM32F071xB) || defined(STM32F072xB) || \
+	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
 	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
 	RCC_APB1ENR_SPI2EN,
 #else
@@ -56,7 +56,7 @@ static uint32_t const reset_list[spi::SPI_END] =
 	RCC_APB2RSTR_SPI1RST,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
 	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070x6) || defined(STM32F071xB) || defined(STM32F072xB) || \
+	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
 	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
 	RCC_APB1RSTR_SPI2RST,
 #else
@@ -522,7 +522,7 @@ extern "C" void spi_irq_hndlr(hal::spi *obj)
 {
 	SPI_TypeDef *spi = spi_list[obj->_spi];
 	uint32_t sr = spi->SR;
-	uint32_t dr = spi->DR;
+	volatile uint32_t dr = spi->DR;
 #if configUSE_TRACE_FACILITY
 	vTraceStoreISRBegin(isr_spi);
 #endif
@@ -579,7 +579,7 @@ extern "C" void SPI1_IRQHandler(void)
 
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
 	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070x6) || defined(STM32F071xB) || defined(STM32F072xB) || \
+	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
 	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
 extern "C" void SPI2_IRQHandler(void)
 {
