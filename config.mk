@@ -5,9 +5,6 @@ MODULES := src \
 	src/hal/STM32F4/CMSIS \
 	src/third_party/FatFs \
 	src/third_party/FreeRTOS \
-	src/third_party/libnmea \
-	src/third_party/printf \
-	src/third_party/TraceRecorder \
 	src/ul
 
 ROOT := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
@@ -25,13 +22,16 @@ GLOBAL_INC := $(ROOT)/src \
 	$(ROOT)/src/hal/STM32F4 \
 	$(ROOT)/src/hal/STM32F4/CMSIS/Include \
 	$(ROOT)/src/third_party/FreeRTOS/include \
-	$(ROOT)/src/third_party/FreeRTOS/portable/ARM_CM4 \
-	$(ROOT)/src/third_party/libnmea/src/nmea \
-	$(ROOT)/src/third_party/TraceRecorder/include \
+	$(ROOT)/src/third_party/FreeRTOS/portable/ARM_CM4
+
+ifneq ($(findstring src/third_party/libnmea,$(MODULES)),)
+GLOBAL_INC += $(ROOT)/src/third_party/libnmea/src/nmea
+endif
+ifneq ($(findstring src/third_party/TraceRecorder,$(MODULES)),)
+GLOBAL_INC += $(ROOT)/src/third_party/TraceRecorder/include \
 	$(ROOT)/src/third_party/TraceRecorder/streamports/Jlink_RTT/include \
-	$(ROOT)/src/third_party/TraceRecorder/config \
-	$(ROOT)/src/third_party/simplelink \
-	$(ROOT)/src/third_party/simplelink/include
+	$(ROOT)/src/third_party/TraceRecorder/config
+endif
 
 GLOBAL_DEF := STM32F407xx
 
@@ -55,8 +55,6 @@ LDFLAGS := -Tsrc/hal/STM32F4/STM32F40_41xxx.ld \
 	--specs=nano.specs \
 	-Wl,--gc-sections \
 	-Wl,-Map="$(MAP)",--cref
-	#--specs=rdimon.specs
-	#--specs=nosys.specs
 
 CC := arm-none-eabi-gcc
 CPP := arm-none-eabi-g++
@@ -67,8 +65,8 @@ OBJDUMP := arm-none-eabi-objdump
 SIZE := arm-none-eabi-size
 
 FLASHER := JLink
-#FLASHER = openocd
-#FLASHER = ST-LINK_CLI
+#FLASHER := openocd
+#FLASHER := ST-LINK_CLI
 
 JLINK_PARAM := -device STM32F407VG -if SWD -speed auto
 

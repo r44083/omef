@@ -3,9 +3,7 @@ MODULES := src \
 	src/drv \
 	src/hal/STM32F1 \
 	src/hal/STM32F1/CMSIS \
-	src/third_party/FatFs \
 	src/third_party/FreeRTOS \
-	src/third_party/TraceRecorder \
 	src/ul
 
 ROOT := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
@@ -23,10 +21,16 @@ GLOBAL_INC := $(ROOT)/src \
 	$(ROOT)/src/hal/STM32F1 \
 	$(ROOT)/src/hal/STM32F1/CMSIS/Include \
 	$(ROOT)/src/third_party/FreeRTOS/include \
-	$(ROOT)/src/third_party/FreeRTOS/portable/ARM_CM3 \
-	$(ROOT)/src/third_party/TraceRecorder/include \
+	$(ROOT)/src/third_party/FreeRTOS/portable/ARM_CM3
+
+ifneq ($(findstring src/third_party/libnmea,$(MODULES)),)
+GLOBAL_INC += $(ROOT)/src/third_party/libnmea/src/nmea
+endif
+ifneq ($(findstring src/third_party/TraceRecorder,$(MODULES)),)
+GLOBAL_INC += $(ROOT)/src/third_party/TraceRecorder/include \
 	$(ROOT)/src/third_party/TraceRecorder/streamports/Jlink_RTT/include \
 	$(ROOT)/src/third_party/TraceRecorder/config
+endif
 
 GLOBAL_DEF := STM32F100xB
 
@@ -59,8 +63,8 @@ OBJDUMP := arm-none-eabi-objdump
 SIZE := arm-none-eabi-size
 
 FLASHER := JLink
-#FLASHER = openocd
-#FLASHER = ST-LINK_CLI
+#FLASHER := openocd
+#FLASHER := ST-LINK_CLI
 
 JLINK_PARAM := -device STM32F100RB -if SWD -speed auto
 
