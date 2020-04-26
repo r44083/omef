@@ -9,11 +9,11 @@ SRC := dataflash/dataflash.cpp \
 	hd44780/hd44780.cpp \
 	nrf24l01/nrf24l01.cpp \
 	onewire/onewire.cpp \
-	sd/sd_spi.cpp \
 	sd/sd.cpp \
+	sd/sd_spi.cpp \
 	singlewire/singlewire.cpp
 
-INC :=
+INC := ../third_party/libnmea/src/nmea
 DEF :=
 C_CPP_FLAGS :=
 CFLAGS :=
