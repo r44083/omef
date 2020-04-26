@@ -48,7 +48,7 @@ GLOBAL_CPPFLAGS := -std=c++11 \
 
 GLOBAL_AFLAGS := -g3
 
-LDFLAGS := -Tsrc/hal/STM32F4/STM32F40_41xxx.ld \
+LDFLAGS := -Tsrc/hal/STM32F4/STM32F407VGTx_FLASH.ld \
 	-mcpu=cortex-m4 -mthumb \
 	-nostartfiles \
 	--specs=nano.specs \
