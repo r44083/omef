@@ -310,6 +310,7 @@ void uart::remap_dma(dma &dma)
 			break;
 		
 		default: break;
+	}
 #endif
 }
 
