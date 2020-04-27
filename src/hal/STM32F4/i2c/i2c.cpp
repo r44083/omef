@@ -159,8 +159,9 @@ static void calc_clk(i2c::i2c_t i2c, uint32_t baud, uint8_t *freq, uint8_t *tris
 static traceHandle isr_dma_tx, isr_dma_rx, isr_i2c_event, isr_i2c_error;
 #endif
 
-// TODO: for debug
+#if configUSE_TRACE_FACILITY
 static traceString ch1;
+#endif
 
 i2c::i2c(i2c_t i2c, uint32_t baud, dma &dma_tx, dma &dma_rx, gpio &sda,
 	gpio &scl):
@@ -438,15 +439,17 @@ void i2c::on_dma_tx(dma *dma, dma::event_t event, void *ctx)
 	
 	if(event == dma::EVENT_CMPLT)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "tx_hndlr");
+#endif
 		
 		tx_hndlr(obj, &hi_task_woken);
 	}
 	else if(event == dma::EVENT_ERROR)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "err_hndlr");
+#endif
 		
 		err_hndlr(obj, RES_TX_FAIL, &hi_task_woken);
 	}
@@ -467,15 +470,17 @@ void i2c::on_dma_rx(dma *dma, dma::event_t event, void *ctx)
 	
 	if(event == dma::EVENT_CMPLT)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "rx_hndlr");
+#endif
 		
 		rx_hndlr(obj, &hi_task_woken);
 	}
 	else if(event == dma::EVENT_ERROR)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "err_hndlr");
+#endif
 		
 		err_hndlr(obj, RES_RX_FAIL, &hi_task_woken);
 	}
@@ -556,8 +561,9 @@ extern "C" void i2c_event_irq_hndlr(i2c *obj)
 	
 	if(sr1 & I2C_SR1_SB)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "send address");
+#endif
 		
 		/* Start condition is sent. Need to send device address */
 		i2c_base->DR = (obj->_addr << 1) | (obj->tx_buff ? 0 : 1);
@@ -568,8 +574,9 @@ extern "C" void i2c_event_irq_hndlr(i2c *obj)
 		/* Device address is sent. Need to send/receive data */
 		if(obj->tx_buff)
 		{
-			// TODO: for debug
+#if configUSE_TRACE_FACILITY
 			vTracePrint(ch1, "start tx dma");
+#endif
 			
 			obj->tx_dma.src(obj->tx_buff);
 			obj->tx_dma.size(obj->tx_size);
@@ -582,8 +589,9 @@ extern "C" void i2c_event_irq_hndlr(i2c *obj)
 			else
 				i2c_base->CR1 &= ~I2C_CR1_ACK;
 			
-			// TODO: for debug
+#if configUSE_TRACE_FACILITY
 			vTracePrint(ch1, "start rx dma");
+#endif
 			
 			obj->rx_dma.dst(obj->rx_buff);
 			obj->rx_dma.size(obj->rx_size);
@@ -614,13 +622,15 @@ extern "C" void i2c_error_irq_hndlr(i2c *obj)
 	BaseType_t hi_task_woken = 0;
 	
 	
-	// TODO: for debug
+#if configUSE_TRACE_FACILITY
 	vTracePrint(ch1, "Error irq");
+#endif
 	
 	if(sr1 & I2C_SR1_AF)
 	{
-		// TODO: for debug
+#if configUSE_TRACE_FACILITY
 		vTracePrint(ch1, "AF irq");
+#endif
 		
 		/* Error: no ACK from device */
 		i2c_base->SR1 &= ~I2C_SR1_AF;

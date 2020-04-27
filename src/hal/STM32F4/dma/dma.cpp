@@ -96,7 +96,7 @@ dma::dma(dma_t dma, stream_t stream, ch_t ch, dir_t dir, inc_size_t inc_size):
 	dma_stream->CR &= ~DMA_SxCR_EN;
 	
 	/* Clear isr reg flags */
-	isr_clr_list[_dma][_stream] = (DMA_LIFCR_CFEIF0 | DMA_LIFCR_CDMEIF0 |
+	*isr_clr_list[_dma][_stream] = (DMA_LIFCR_CFEIF0 | DMA_LIFCR_CDMEIF0 |
 		DMA_LIFCR_CTEIF0 | DMA_LIFCR_CHTIF0 | DMA_LIFCR_CTCIF0) <<
 		isr_shift_list[_stream];
 	
@@ -261,7 +261,7 @@ void dma::start_once(cb_t cb, void *ctx)
 	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
 	
-	isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
+	*isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
 	NVIC_EnableIRQ(irq_list[_dma][_stream]);
 	dma_stream->CR |= DMA_SxCR_EN;
 }
@@ -283,7 +283,7 @@ void dma::start_cyclic(cb_t cb, void *ctx)
 	dma_stream->CR |= DMA_SxCR_CIRC;
 	
 	/* Clear interrupt flag to prevent transfer complete interrupt */
-	isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
+	*isr_clr_list[_dma][_stream] = DMA_LIFCR_CTCIF0 << isr_shift_list[_stream];
 	NVIC_EnableIRQ(irq_list[_dma][_stream]);
 	dma_stream->CR |= DMA_SxCR_EN;
 }
