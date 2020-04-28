@@ -23,11 +23,11 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio spi1_mosi(0, 7, gpio::MODE_AF, 0);
-	static gpio spi1_miso(0, 6, gpio::MODE_AF, 0);
-	static gpio spi1_clk(0, 5, gpio::MODE_AF, 0);
-	static gpio sd_cs(0, 4, gpio::MODE_DO, 1);
-	static gpio sd_cd(0, 3, gpio::MODE_DI, 1);
+	static gpio spi1_mosi(0, 7, gpio::mode::AF, 0);
+	static gpio spi1_miso(0, 6, gpio::mode::AF, 0);
+	static gpio spi1_clk(0, 5, gpio::mode::AF, 0);
+	static gpio sd_cs(0, 4, gpio::mode::DO, 1);
+	static gpio sd_cd(0, 3, gpio::mode::DI, 1);
 	
 	static dma spi1_rx_dma(dma::DMA_2, dma::STREAM_0, dma::CH_3,
 		dma::DIR_PERIPH_TO_MEM, dma::INC_SIZE_8);

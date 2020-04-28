@@ -20,7 +20,7 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	
 	wdt::init(1000);
 	wdt::on();

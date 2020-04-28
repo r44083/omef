@@ -59,7 +59,7 @@ static void wifi_init_softap(void)
 
 extern "C" void app_main(void)
 {
-	static hal::gpio blue_led(0, 2, hal::gpio::MODE_DO, 1);
+	static hal::gpio blue_led(0, 2, hal::gpio::mode::DO, 1);
 	
 	wifi_init_softap();
 	

@@ -70,9 +70,9 @@ hd44780::hd44780(gpio &rs, gpio &rw, gpio &e, gpio &db4, gpio &db5, gpio &db6,
 	_db{&db4, &db5, &db6, &db7},
 	_tim(tim)
 {
-	ASSERT(_rs.mode() == gpio::MODE_DO);
-	ASSERT(_rw.mode() == gpio::MODE_DO);
-	ASSERT(_e.mode() == gpio::MODE_DO);
+	ASSERT(_rs.mode() == gpio::mode::DO);
+	ASSERT(_rw.mode() == gpio::mode::DO);
+	ASSERT(_e.mode() == gpio::mode::DO);
 	
 	_rs.set(1);
 	_rw.set(1);
@@ -80,7 +80,7 @@ hd44780::hd44780(gpio &rs, gpio &rw, gpio &e, gpio &db4, gpio &db5, gpio &db6,
 	
 	for(uint8_t i = 0; i < (sizeof(_db) / sizeof(_db[0])); i++)
 	{
-		ASSERT(_db[i]->mode() == gpio::MODE_DO);
+		ASSERT(_db[i]->mode() == gpio::mode::DO);
 		_db[i]->set(1);
 	}
 	
@@ -211,7 +211,7 @@ void hd44780::read_cgram(uint8_t buff[8][8])
 	write(CMD, SET_CGRAM_ADDRESS);
 	
 	for(uint8_t i = 0; i < (sizeof(_db) / sizeof(_db[0])); i++)
-		_db[i]->mode(gpio::MODE_DI);
+		_db[i]->mode(gpio::mode::DI);
 	
 	_rw.set(1);
 	_rs.set(1);
@@ -224,7 +224,7 @@ void hd44780::read_cgram(uint8_t buff[8][8])
 	}
 	
 	for(uint8_t i = 0; i < (sizeof(_db) / sizeof(_db[0])); i++)
-		_db[i]->mode(gpio::MODE_DO);
+		_db[i]->mode(gpio::mode::DO);
 	
 	write(CMD, SET_DDRAM_ADDRESS | old_addr);
 	
@@ -234,7 +234,7 @@ void hd44780::read_cgram(uint8_t buff[8][8])
 uint8_t hd44780::read_bf_and_ddram_addr()
 {
 	for(uint8_t i = 0; i < (sizeof(_db) / sizeof(_db[0])); i++)
-		_db[i]->mode(gpio::MODE_DI);
+		_db[i]->mode(gpio::mode::DI);
 	
 	_rw.set(1);
 	_rs.set(0);
@@ -243,7 +243,7 @@ uint8_t hd44780::read_bf_and_ddram_addr()
 	byte |= read_4bit();
 	
 	for(uint8_t i = 0; i < (sizeof(_db) / sizeof(_db[0])); i++)
-		_db[i]->mode(gpio::MODE_DO);
+		_db[i]->mode(gpio::mode::DO);
 	
 	return byte;
 }

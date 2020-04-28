@@ -25,9 +25,9 @@ static void exti_cb(exti *exti, void *ctx)
 
 int main(void)
 {
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
-	static gpio blue_led(2, 7, gpio::MODE_DO, 0);
-	static gpio exti1_gpio(0, 0, gpio::MODE_DI, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
+	static gpio blue_led(2, 7, gpio::mode::DO, 0);
+	static gpio exti1_gpio(0, 0, gpio::mode::DI, 0);
 	
 	static exti exti1(exti1_gpio, exti::TRIGGER_RISING);
 	exti1.cb(exti_cb, &blue_led);

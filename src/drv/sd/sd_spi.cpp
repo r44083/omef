@@ -120,7 +120,7 @@ sd_spi::sd_spi(hal::spi &spi, hal::gpio &cs, hal::gpio *cd):
 	ASSERT(_spi.cpol() == spi::CPOL_0);
 	ASSERT(_spi.cpha() == spi::CPHA_0);
 	ASSERT(_spi.bit_order() == spi::BIT_ORDER_MSB);
-	ASSERT(_cs.mode() == gpio::MODE_DO && cs.get());
+	ASSERT(_cs.mode() == gpio::mode::DO && cs.get());
 }
 
 sd_spi::~sd_spi()

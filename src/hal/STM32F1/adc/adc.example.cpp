@@ -24,8 +24,8 @@ void adc::adc_clbk(adc *adc, adc::adc_ch_t ch, float val, void *ctx)
 
 int main(void)
 {
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
-	static gpio adc_gpio(0, 0, gpio::MODE_AN);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
+	static gpio adc_gpio(0, 0, gpio::mode::AN);
 	
 	static dma adc_dma(dma::DMA_1, dma::DMA_CH_1,
 		dma::DMA_DIR_PERIPH_TO_MEM, dma::DMA_INC_SIZE_16);

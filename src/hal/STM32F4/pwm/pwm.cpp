@@ -5,6 +5,7 @@
 #include "tim/tim.hpp"
 #include "rcc/rcc.hpp"
 #include "gpio/gpio.hpp"
+#include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F4xx/Include/stm32f4xx.h"
 
 using namespace hal;
@@ -178,47 +179,6 @@ static uint32_t const ccmr_reg_list[pwm::CH_END][pwm::MODE_INVERTED + 1] =
 	{TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1, TIM_CCMR2_OC4M}
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOD, GPIOE,
-#else
-	NULL, NULL,
-#endif
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOF, GPIOG,
-#else
-	NULL, NULL,
-#endif
-	GPIOH,
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F415xx) || \
-	defined(STM32F417xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	GPIOI,
-#else
-	NULL,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOJ, GPIOK
-#else
-	NULL, NULL
-#endif
-};
-
 static void gpio_af_init(tim::tim_t tim, gpio &gpio);
 
 static void calc_freq(tim::tim_t tim, uint32_t freq, uint16_t *presc,
@@ -238,7 +198,7 @@ pwm::pwm(tim::tim_t tim, ch_t ch, gpio &gpio, mode_t mode):
 	ASSERT(_ch < CH_END);
 	ASSERT(_ch <= max_ch_list[_tim]);
 	ASSERT(_mode <= MODE_INVERTED);
-	ASSERT(_gpio.mode() == gpio::MODE_AF);
+	ASSERT(_gpio.mode() == gpio::mode::AF);
 	
 	*rcc_bus_list[_tim] |= rcc_list[_tim];
 	
@@ -328,7 +288,7 @@ void pwm::stop() const
 
 static void gpio_af_init(tim::tim_t tim, gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_list[gpio.port()];
+	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
 	
 	/* Push-pull type */
 	gpio_reg->OTYPER &= ~(GPIO_OTYPER_OT0 << 1);

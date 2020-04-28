@@ -148,9 +148,9 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	ASSERT(tx_dma.inc_size() == dma::INC_SIZE_8);
 	ASSERT(rx_dma.dir() == dma::DIR_PERIPH_TO_MEM);
 	ASSERT(rx_dma.inc_size() == dma::INC_SIZE_8);
-	ASSERT(_mosi.mode() == gpio::MODE_AF);
-	ASSERT(_miso.mode() == gpio::MODE_AF);
-	ASSERT(_clk.mode() == gpio::MODE_AF);
+	ASSERT(_mosi.mode() == gpio::mode::AF);
+	ASSERT(_miso.mode() == gpio::mode::AF);
+	ASSERT(_clk.mode() == gpio::mode::AF);
 	
 	ASSERT(api_lock = xSemaphoreCreateMutex());
 	

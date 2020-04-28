@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "i2c.hpp"
 #include "rcc/rcc.hpp"
+#include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F4xx/Include/stm32f4xx.h"
 #include "CMSIS/Include/core_cm4.h"
 
@@ -108,47 +109,6 @@ static uint8_t const gpio_af_list[i2c::I2C_END] =
 #endif
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOD, GPIOE,
-#else
-	NULL, NULL,
-#endif
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOF, GPIOG,
-#else
-	NULL, NULL,
-#endif
-	GPIOH,
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F415xx) || \
-	defined(STM32F417xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	GPIOI,
-#else
-	NULL,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOJ, GPIOK
-#else
-	NULL, NULL
-#endif
-};
-
 static i2c *obj_list[i2c::I2C_END];
 
 static void gpio_af_init(i2c::i2c_t i2c, gpio &gpio);
@@ -183,8 +143,8 @@ i2c::i2c(i2c_t i2c, uint32_t baud, dma &dma_tx, dma &dma_rx, gpio &sda,
 	ASSERT(tx_dma.inc_size() == dma::INC_SIZE_8);
 	ASSERT(rx_dma.dir() == dma::DIR_PERIPH_TO_MEM);
 	ASSERT(rx_dma.inc_size() == dma::INC_SIZE_8);
-	ASSERT(_sda.mode() == gpio::MODE_AF);
-	ASSERT(_scl.mode() == gpio::MODE_AF);
+	ASSERT(_sda.mode() == gpio::mode::AF);
+	ASSERT(_scl.mode() == gpio::mode::AF);
 	
 	ASSERT(api_lock = xSemaphoreCreateMutex());
 	
@@ -375,7 +335,7 @@ int8_t i2c::exch(uint16_t addr, void *buff_tx, uint16_t size_tx, void *buff_rx,
 
 static void gpio_af_init(i2c::i2c_t i2c, gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_list[gpio.port()];
+	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
 	
 	uint8_t pin = gpio.pin();
 	/* Open drain type */

@@ -41,8 +41,8 @@ uart::uart(uart_t uart, uint32_t baud, stopbit_t stopbit, parity_t parity,
 	ASSERT(tx_dma.inc_size() == dma::INC_SIZE_8);
 	ASSERT(rx_dma.dir() == dma::DIR_PERIPH_TO_MEM);
 	ASSERT(rx_dma.inc_size() == dma::INC_SIZE_8);
-	ASSERT(tx_gpio.mode() == gpio::MODE_AF);
-	ASSERT(rx_gpio.mode() == gpio::MODE_AF);
+	ASSERT(tx_gpio.mode() == gpio::mode::AF);
+	ASSERT(rx_gpio.mode() == gpio::mode::AF);
 	
 	ASSERT(api_lock = xSemaphoreCreateMutex());
 	
@@ -316,7 +316,7 @@ void uart::remap_dma(dma &dma)
 
 void uart::gpio_af_init(gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_list[gpio.port()];
+	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
 	uint8_t pin = gpio.pin();
 	
 	/* Push-pull type */

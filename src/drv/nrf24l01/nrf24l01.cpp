@@ -22,8 +22,8 @@ nrf24l01::nrf24l01(hal::spi &spi, hal::gpio &cs, hal::gpio &ce, hal::exti &exti,
 	ASSERT(_spi.cpol() == hal::spi::CPOL_0);
 	ASSERT(_spi.cpha() == hal::spi::CPHA_0);
 	ASSERT(_spi.bit_order() == hal::spi::BIT_ORDER_MSB);
-	ASSERT(_cs.mode() == hal::gpio::MODE_DO);
-	ASSERT(_ce.mode() == hal::gpio::MODE_DO);
+	ASSERT(_cs.mode() == hal::gpio::mode::DO);
+	ASSERT(_ce.mode() == hal::gpio::mode::DO);
 	
 	_cs.set(1);
 	_ce.set(0);

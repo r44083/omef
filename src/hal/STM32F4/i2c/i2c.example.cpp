@@ -33,10 +33,10 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
-	static gpio i2c1_sda(1, 9, gpio::MODE_AF, 0);
-	static gpio i2c1_scl(1, 6, gpio::MODE_AF, 0);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
+	static gpio i2c1_sda(1, 9, gpio::mode::AF, 0);
+	static gpio i2c1_scl(1, 6, gpio::mode::AF, 0);
 	
 	static dma i2c1_tx_dma(dma::DMA_1, dma::STREAM_6, dma::CH_1,
 		dma::DIR_MEM_TO_PERIPH, dma::INC_SIZE_8);

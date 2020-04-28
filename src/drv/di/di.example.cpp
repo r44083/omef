@@ -21,8 +21,8 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	
 	static di b1_di(b1, 50, 1);
 	b1_di.cb(b1_cb, &green_led);

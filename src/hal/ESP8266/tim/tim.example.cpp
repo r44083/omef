@@ -20,7 +20,7 @@ static void tim_cb(hal::tim *tim, void *ctx)
 
 extern "C" void app_main(void)
 {
-	static hal::gpio blue_led(0, 2, hal::gpio::MODE_DO, 1);
+	static hal::gpio blue_led(0, 2, hal::gpio::mode::DO, 1);
 	
 	static hal::tim tim1(hal::tim::TIM_1);
 	tim1.cb(tim_cb, &blue_led);

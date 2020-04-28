@@ -37,13 +37,13 @@ extern "C" void app_main(void)
 	   (GPIO2) like in example below.
 	*/
 
-	static hal::gpio uart0_tx(0, 1, hal::gpio::MODE_AF1);
-	static hal::gpio uart0_rx(0, 3, hal::gpio::MODE_AF1);
+	static hal::gpio uart0_tx(0, 1, hal::gpio::mode::AF1);
+	static hal::gpio uart0_rx(0, 3, hal::gpio::mode::AF1);
 	static hal::uart uart0(hal::uart::UART_0, 115200, hal::uart::STOPBIT_1,
 		hal::uart::PARITY_NONE, &uart0_tx, &uart0_rx);
 	
 	/* Initializing UART1:
-	static hal::gpio uart1_tx(0, 2, hal::gpio::MODE_AF2);
+	static hal::gpio uart1_tx(0, 2, hal::gpio::mode::AF2);
 	static hal::uart uart1(hal::uart::UART_1, 115200, hal::uart::STOPBIT_1,
 		hal::uart::PARITY_NONE, &uart1_tx, NULL);*/
 	

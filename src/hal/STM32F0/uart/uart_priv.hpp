@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F0xx/Include/stm32f0xx.h"
 
 namespace hal::uart_priv
@@ -155,31 +156,11 @@ constexpr rcc_src_t rcc_src_list[uart::UART_END] =
 
 /* Get AF index by uart interface and port number:
 af = uart2afr[_uart][gpio.port()] */
-constexpr uint8_t uart2afr[][PORT_QTY] =
+constexpr uint8_t uart2afr[][gpio::ports] =
 {
 	{1, 0},
 	{1, 0, 0, 0},
 	{0, 4, 1, 0},
 	{4, 0, 0}
-};
-
-constexpr GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC,
-#if defined(STM32F030x6) || defined(STM32F030x8) || defined(STM32F030xC) || \
-	defined(STM32F051x8) || defined(STM32F058xx) || defined(STM32F070x6) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	GPIOD,
-#else
-	NULL,
-#endif
-#if defined(STM32F071xB) || defined(STM32F072xB) || defined(STM32F078xx) || \
-	defined(STM32F091xC) || defined(STM32F098xx)
-	GPIOE,
-#else
-	NULL,
-#endif
-	GPIOF
 };
 };

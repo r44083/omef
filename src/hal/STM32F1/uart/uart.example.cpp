@@ -33,10 +33,10 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
-	static gpio uart1_tx_gpio(0, 9, gpio::MODE_AF);
-	static gpio uart1_rx_gpio(0, 10, gpio::MODE_AF);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
+	static gpio uart1_tx_gpio(0, 9, gpio::mode::AF);
+	static gpio uart1_rx_gpio(0, 10, gpio::mode::AF);
 	
 	static dma uart1_tx_dma(dma::DMA_1, dma::CH_4, dma::DIR_MEM_TO_PERIPH,
 		dma::INC_SIZE_8);

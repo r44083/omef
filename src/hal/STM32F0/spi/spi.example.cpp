@@ -39,13 +39,13 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	
-	static gpio spi1_mosi_gpio(1, 5, gpio::MODE_AF, 1);
-	static gpio spi1_miso_gpio(1, 4, gpio::MODE_AF, 1);
-	static gpio spi1_clk_gpio(1, 3, gpio::MODE_AF, 1);
-	static gpio dev1_cs(1, 2, gpio::MODE_DO, 1);
+	static gpio spi1_mosi_gpio(1, 5, gpio::mode::AF, 1);
+	static gpio spi1_miso_gpio(1, 4, gpio::mode::AF, 1);
+	static gpio spi1_clk_gpio(1, 3, gpio::mode::AF, 1);
+	static gpio dev1_cs(1, 2, gpio::mode::DO, 1);
 	
 	static dma spi1_tx_dma(dma::DMA_1, dma::CH_3, dma::DIR_MEM_TO_PERIPH,
 		dma::INC_SIZE_8);

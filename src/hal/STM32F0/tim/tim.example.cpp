@@ -25,8 +25,8 @@ static void tim_cb(tim *tim, void *ctx)
 
 int main(void)
 {
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
-	static gpio blue_led(2, 7, gpio::MODE_DO, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
+	static gpio blue_led(2, 7, gpio::mode::DO, 0);
 	
 	static tim tim6(tim::TIM_6);
 	tim6.cb(tim_cb, &blue_led);

@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "spi.hpp"
 #include "rcc/rcc.hpp"
+#include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F4xx/Include/stm32f4xx.h"
 #include "CMSIS/Include/core_cm4.h"
 
@@ -264,47 +265,6 @@ static uint8_t const gpio_af_list[spi::SPI_END] =
 	0x05
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOD, GPIOE,
-#else
-	NULL, NULL,
-#endif
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOF, GPIOG,
-#else
-	NULL, NULL,
-#endif
-	GPIOH,
-#if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F415xx) || \
-	defined(STM32F417xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	GPIOI,
-#else
-	NULL,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	GPIOJ, GPIOK
-#else
-	NULL, NULL
-#endif
-};
-
 static spi *obj_list[spi::SPI_END];
 
 static void gpio_af_init(spi::spi_t spi, gpio &gpio);
@@ -341,9 +301,9 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	ASSERT(tx_dma.inc_size() == dma::INC_SIZE_8);
 	ASSERT(rx_dma.dir() == dma::DIR_PERIPH_TO_MEM);
 	ASSERT(rx_dma.inc_size() == dma::INC_SIZE_8);
-	ASSERT(_mosi.mode() == gpio::MODE_AF);
-	ASSERT(_miso.mode() == gpio::MODE_AF);
-	ASSERT(_clk.mode() == gpio::MODE_AF);
+	ASSERT(_mosi.mode() == gpio::mode::AF);
+	ASSERT(_miso.mode() == gpio::mode::AF);
+	ASSERT(_clk.mode() == gpio::mode::AF);
 	
 	ASSERT(api_lock = xSemaphoreCreateMutex());
 	
@@ -610,7 +570,7 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 
 static void gpio_af_init(spi::spi_t spi, gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_list[gpio.port()];
+	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
 	
 	uint8_t pin = gpio.pin();
 	/* Push-pull type */

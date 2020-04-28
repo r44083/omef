@@ -99,25 +99,6 @@ static rcc_src_t const rcc_src_list[uart::UART_END] =
 	RCC_SRC_APB1
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC, GPIOD,
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
-	defined(STM32F101xE) || defined(STM32F101xG) || defined(STM32F103xB) || \
-	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
-	defined(STM32F107xC)
-	GPIOE,
-#else
-	NULL,
-#endif
-#if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
-	defined(STM32F103xE) || defined(STM32F103xG)
-	GPIOF, GPIOG
-#else
-	NULL, NULL
-#endif
-};
-
 static uart *obj_list[uart::UART_END];
 
 #if configUSE_TRACE_FACILITY
@@ -146,8 +127,8 @@ uart::uart(uart_t uart, uint32_t baud, stopbit_t stopbit, parity_t parity,
 	ASSERT(tx_dma.inc_size() == dma::INC_SIZE_8);
 	ASSERT(rx_dma.dir() == dma::DIR_PERIPH_TO_MEM);
 	ASSERT(rx_dma.inc_size() == dma::INC_SIZE_8);
-	ASSERT(tx_gpio.mode() == gpio::MODE_AF);
-	ASSERT(rx_gpio.mode() == gpio::MODE_AF);
+	ASSERT(tx_gpio.mode() == gpio::mode::AF);
+	ASSERT(rx_gpio.mode() == gpio::mode::AF);
 	
 	ASSERT(api_lock = xSemaphoreCreateMutex());
 	

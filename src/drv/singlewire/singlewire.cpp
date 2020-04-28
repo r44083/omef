@@ -36,7 +36,7 @@ singlewire::singlewire(hal::gpio &gpio, hal::tim &tim, hal::exti &exti):
 	_tim(tim),
 	_exti(exti)
 {
-	ASSERT(_gpio.mode() == gpio::MODE_OD);
+	ASSERT(_gpio.mode() == gpio::mode::OD);
 	
 	_tim.cb(tim_cb, this);
 	_exti.cb(exti_cb, this);

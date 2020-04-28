@@ -30,8 +30,8 @@ static void dht11_task(void *pvParameters)
 int main(void)
 {
 	// Example for STM32F4DISCOVERY development board
-	static gpio dht11_gpio(0, 7, gpio::MODE_OD, 1);
-	static gpio dht11_exti_gpio(0, 10, gpio::MODE_DI, 1);
+	static gpio dht11_gpio(0, 7, gpio::mode::OD, 1);
+	static gpio dht11_exti_gpio(0, 10, gpio::mode::DI, 1);
 	
 	static tim dht11_tim(tim::TIM_7);
 	

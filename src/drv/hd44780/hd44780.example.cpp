@@ -22,15 +22,15 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI);
+	static gpio b1(0, 0, gpio::mode::DI);
 	
-	static gpio rs(0, 5, gpio::MODE_DO);
-	static gpio rw(0, 4, gpio::MODE_DO);
-	static gpio e(0, 3, gpio::MODE_DO);
-	static gpio db4(0, 6, gpio::MODE_DO);
-	static gpio db5(0, 7, gpio::MODE_DO);
-	static gpio db6(0, 8, gpio::MODE_DO);
-	static gpio db7(0, 10, gpio::MODE_DO);
+	static gpio rs(0, 5, gpio::mode::DO);
+	static gpio rw(0, 4, gpio::mode::DO);
+	static gpio e(0, 3, gpio::mode::DO);
+	static gpio db4(0, 6, gpio::mode::DO);
+	static gpio db5(0, 7, gpio::mode::DO);
+	static gpio db6(0, 8, gpio::mode::DO);
+	static gpio db7(0, 10, gpio::mode::DO);
 	
 	static tim tim6(tim::TIM_6);
 	

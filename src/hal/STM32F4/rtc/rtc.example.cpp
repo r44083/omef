@@ -23,7 +23,7 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	
 	rtc::init(rtc::CLK_LSI);
 	struct tm time = {};

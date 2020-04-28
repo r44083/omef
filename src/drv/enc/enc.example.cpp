@@ -21,8 +21,8 @@ static void enc_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio enc_a(0, 7, gpio::MODE_DI, 1);
-	static gpio enc_b(0, 8, gpio::MODE_DI, 1);
+	static gpio enc_a(0, 7, gpio::mode::DI, 1);
+	static gpio enc_b(0, 8, gpio::mode::DI, 1);
 	
 	static enc _enc(enc_a, enc_b);
 	static int32_t enc_counter;

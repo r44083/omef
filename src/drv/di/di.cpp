@@ -14,7 +14,7 @@ di::di(gpio &gpio, uint16_t threshold, bool default_state):
 	_ctx(NULL),
 	_cb(NULL)
 {
-	ASSERT(_gpio.mode() == gpio::MODE_DI);
+	ASSERT(_gpio.mode() == gpio::mode::DI);
 }
 
 di::~di()

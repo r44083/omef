@@ -19,8 +19,8 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
-	static gpio pwm2_ch2_gpio(0, 1, gpio::MODE_AF, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
+	static gpio pwm2_ch2_gpio(0, 1, gpio::mode::AF, 0);
 	
 	static pwm pwm2_ch2(tim::TIM_2, pwm::CH_2, pwm2_ch2_gpio);
 	pwm2_ch2.freq(100000);

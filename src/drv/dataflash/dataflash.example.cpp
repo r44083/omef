@@ -56,15 +56,15 @@ static void b1_cb(drv::di *di, bool state, void *ctx)
 int main(void)
 {
 	// Example for STM32F4DISCOVERY development board
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	
 	static drv::di b1_di(b1, 50, 1);
 	
-	static gpio spi1_mosi(0, 7, gpio::MODE_AF, 0);
-	static gpio spi1_miso(0, 6, gpio::MODE_AF, 0);
-	static gpio spi1_clk(0, 5, gpio::MODE_AF, 0);
-	static gpio at45db_cs(0, 4, gpio::MODE_DO, 1);
+	static gpio spi1_mosi(0, 7, gpio::mode::AF, 0);
+	static gpio spi1_miso(0, 6, gpio::mode::AF, 0);
+	static gpio spi1_clk(0, 5, gpio::mode::AF, 0);
+	static gpio at45db_cs(0, 4, gpio::mode::DO, 1);
 	
 	static dma spi1_rx_dma(dma::DMA_2, dma::STREAM_0, dma::CH_3,
 		dma::DIR_PERIPH_TO_MEM, dma::INC_SIZE_8);

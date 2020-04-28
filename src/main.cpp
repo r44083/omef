@@ -1,3 +1,5 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "gpio/gpio.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -16,8 +18,7 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
-	// Example for STM32F4DISCOVERY development board
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	
 	xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1, &green_led,
 		tskIDLE_PRIORITY + 1, NULL);

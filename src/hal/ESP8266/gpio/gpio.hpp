@@ -30,32 +30,25 @@ namespace hal
 class gpio
 {
 	public:
-		enum mode_t
-		{
-			MODE_DO,
-			MODE_OD,
-			MODE_DI,
-			MODE_AF1,
-			MODE_AF2,
-			MODE_AF3,
-			MODE_AF4
-		};
+		enum class mode {DO,OD,DI,AF1,AF2,AF3,AF4};
+		static constexpr auto ports = 1;
+		static constexpr auto pins = 17;
 		
-		gpio(uint8_t port, uint8_t pin, mode_t mode, bool state = false);
+		gpio(uint8_t port, uint8_t pin, mode mode, bool state = false);
 		~gpio();
 		
 		void set(bool state) const;
 		bool get() const;
 		void toggle() const;
-		void mode(mode_t mode, bool state = false);
+		void mode(mode mode, bool state = false);
 		
-		mode_t mode() const { return _mode; }
+		enum mode mode() const { return _mode; }
 		uint8_t port() const { return _port; }
 		uint8_t pin() const { return _pin; }
 	
 	private:
 		uint8_t _port;
 		uint8_t _pin;
-		mode_t _mode;
+		enum mode _mode;
 };
 }

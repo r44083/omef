@@ -24,9 +24,9 @@ static void di_task(void *pvParameters)
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio uart3_tx_gpio(3, 8, gpio::MODE_AF, 0);
-	static gpio uart3_rx_gpio(1, 11, gpio::MODE_AF, 0);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio uart3_tx_gpio(3, 8, gpio::mode::AF, 0);
+	static gpio uart3_rx_gpio(1, 11, gpio::mode::AF, 0);
 	
 	static dma uart3_tx_dma(dma::DMA_1, dma::STREAM_3, dma::CH_4,
 		dma::DIR_MEM_TO_PERIPH, dma::INC_SIZE_8);

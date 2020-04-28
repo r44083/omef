@@ -10,7 +10,7 @@ using namespace hal;
 
 #define IRQ_PRIORITY 3
 
-static IRQn_Type const irq_list[PIN_QTY] =
+static IRQn_Type const irq_list[gpio::pins] =
 {
 	EXTI0_IRQn, EXTI1_IRQn, EXTI2_IRQn, EXTI3_IRQn, EXTI4_IRQn, EXTI9_5_IRQn,
 	EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI15_10_IRQn,
@@ -18,7 +18,7 @@ static IRQn_Type const irq_list[PIN_QTY] =
 	EXTI15_10_IRQn
 };
 
-static exti *obj_list[PIN_QTY];
+static exti *obj_list[gpio::pins];
 
 exti::exti(gpio &gpio, trigger_t trigger):
 	_gpio(gpio),
@@ -27,7 +27,7 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	_cb(NULL)
 {
 	ASSERT(_trigger <= TRIGGER_BOTH);
-	ASSERT(_gpio.mode() == gpio::MODE_DI);
+	ASSERT(_gpio.mode() == gpio::mode::DI);
 	
 	/* Enable clock */
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;

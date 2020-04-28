@@ -150,25 +150,6 @@ static uint32_t const ccmr_reg_list[pwm::CH_END][pwm::MODE_INVERTED + 1] =
 	{TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1, TIM_CCMR2_OC4M}
 };
 
-static GPIO_TypeDef *const gpio_list[PORT_QTY] =
-{
-	GPIOA, GPIOB, GPIOC, GPIOD,
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
-	defined(STM32F101xE) || defined(STM32F101xG) || defined(STM32F103xB) || \
-	defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC) || \
-	defined(STM32F107xC)
-	GPIOE,
-#else
-	NULL,
-#endif
-#if defined(STM32F100xE) || defined(STM32F101xE) || defined(STM32F101xG) || \
-	defined(STM32F103xE) || defined(STM32F103xG)
-	GPIOF, GPIOG
-#else
-	NULL, NULL
-#endif
-};
-
 static void calc_freq(tim::tim_t tim, uint32_t freq, uint16_t *presc,
 	uint16_t *reload);
 
@@ -186,11 +167,9 @@ pwm::pwm(tim::tim_t tim, ch_t ch, gpio &gpio, mode_t mode):
 	ASSERT(_ch < CH_END);
 	ASSERT(_ch <= max_ch_list[_tim]);
 	ASSERT(_mode <= MODE_NONINVERTED);
-	ASSERT(_gpio.mode() == gpio::MODE_AF);
+	ASSERT(_gpio.mode() == gpio::mode::AF);
 	
 	*rcc_bus_list[_tim] |= rcc_list[_tim];
-	
-	//gpio_af_init(_tim, _gpio);
 	
 	/* Enable PWM output */
 	tim_list[_tim]->CCER |= TIM_CCER_CC1E << (_ch * 4);

@@ -39,12 +39,12 @@ struct b1_ctx_t
 
 int main(void)
 {
-	static gpio b1(0, 0, gpio::MODE_DI, 0);
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
-	static gpio spi1_mosi(0, 7, gpio::MODE_AF);
-    static gpio spi1_miso(0, 6, gpio::MODE_AF);
-    static gpio spi1_clk(0, 5, gpio::MODE_AF);
-    static gpio lis302_cs(4, 3, gpio::MODE_DO, 1);
+	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
+	static gpio spi1_mosi(0, 7, gpio::mode::AF);
+    static gpio spi1_miso(0, 6, gpio::mode::AF);
+    static gpio spi1_clk(0, 5, gpio::mode::AF);
+    static gpio lis302_cs(4, 3, gpio::mode::DO, 1);
 	
 	static dma spi1_tx_dma(dma::DMA_2, dma::STREAM_3, dma::CH_3,
 		dma::DIR_MEM_TO_PERIPH, dma::INC_SIZE_8);

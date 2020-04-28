@@ -44,9 +44,9 @@ int main(void)
 	time.tm_mday = 1;
 	rtc::set(time);
 	
-	static gpio green_led(3, 12, gpio::MODE_DO, 0);
-	static gpio uart3_tx_gpio(3, 8, gpio::MODE_AF, 0);
-	static gpio uart3_rx_gpio(1, 11, gpio::MODE_AF, 0);
+	static gpio green_led(3, 12, gpio::mode::DO, 0);
+	static gpio uart3_tx_gpio(3, 8, gpio::mode::AF, 0);
+	static gpio uart3_rx_gpio(1, 11, gpio::mode::AF, 0);
 	
 	static dma uart3_tx_dma(dma::dma_t::DMA_1, dma::stream_t::STREAM_3,
 		dma::ch_t::CH_4, dma::dir_t::DIR_MEM_TO_PERIPH, dma::inc_size_t::INC_SIZE_8);

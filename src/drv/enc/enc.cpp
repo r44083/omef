@@ -22,8 +22,8 @@ enc::enc(gpio &a, gpio &b):
 	_ctx(NULL),
 	_cb(NULL)
 {
-	ASSERT(_a.mode() == gpio::MODE_DI);
-	ASSERT(_b.mode() == gpio::MODE_DI);
+	ASSERT(_a.mode() == gpio::mode::DI);
+	ASSERT(_b.mode() == gpio::mode::DI);
 }
 
 enc::~enc()

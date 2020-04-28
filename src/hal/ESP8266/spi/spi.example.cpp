@@ -31,10 +31,10 @@ static void main_task(void *pvParameters)
 
 extern "C" void app_main(void)
 {
-	static hal::gpio spi1_miso(0, 12, hal::gpio::MODE_AF3);
-	static hal::gpio spi1_mosi(0, 13, hal::gpio::MODE_AF3);
-	static hal::gpio spi1_clk(0, 14, hal::gpio::MODE_AF3);
-	static hal::gpio spi1_cs(0, 15, hal::gpio::MODE_DO);
+	static hal::gpio spi1_miso(0, 12, hal::gpio::mode::AF3);
+	static hal::gpio spi1_mosi(0, 13, hal::gpio::mode::AF3);
+	static hal::gpio spi1_clk(0, 14, hal::gpio::mode::AF3);
+	static hal::gpio spi1_cs(0, 15, hal::gpio::mode::DO);
 	
 	static hal::spi spi1(hal::spi::SPI_1, 1000000, hal::spi::CPOL_0,
 		hal::spi::CPHA_0, hal::spi::BIT_ORDER_MSB, spi1_mosi, spi1_miso,

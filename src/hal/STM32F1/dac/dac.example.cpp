@@ -37,8 +37,8 @@ static void tim_cb(tim *tim, void *ctx)
 
 int main(void)
 {
-	static gpio dac1_gpio(0, 4, gpio::MODE_AN, 0);
-	static gpio green_led(2, 9, gpio::MODE_DO, 0);
+	static gpio dac1_gpio(0, 4, gpio::mode::AN, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	
 	static dac dac1(dac::DAC_1, dac::ALIGN_R_12, dac1_gpio);
 	
