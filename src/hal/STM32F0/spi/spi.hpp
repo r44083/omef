@@ -91,6 +91,9 @@ class spi
 		dma &rx_dma;
 		void *rx_buff;
 		
+		void remap_dma(dma &dma);
+		void gpio_af_init(gpio &gpio);
+		uint8_t calc_presc(uint32_t baud);
 		static void on_dma_tx(dma *dma, dma::event_t event, void *ctx);
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
 		friend void ::spi_irq_hndlr(spi *obj);

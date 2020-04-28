@@ -79,9 +79,12 @@ static rcc_src_t const rcc_src_list[spi::SPI_END] =
 	RCC_SRC_APB2, RCC_SRC_APB1
 };
 
-static uint8_t const gpio_af_list[spi::SPI_END] =
+/* Get AF index by spi interface and port number:
+af = spi2afr[_spi][gpio.port()] */
+constexpr uint8_t spi2afr[][PORT_QTY] =
 {
-	0x00, 0x00
+	{0, 0, 0, 0, 1},
+	{0, 0, 1, 1}
 };
 
 static GPIO_TypeDef *const gpio_list[PORT_QTY] =
@@ -105,9 +108,6 @@ static GPIO_TypeDef *const gpio_list[PORT_QTY] =
 };
 
 static spi *obj_list[spi::SPI_END];
-
-static void gpio_af_init(spi::spi_t spi, gpio &gpio);
-static uint8_t calc_presc(spi::spi_t spi, uint32_t baud);
 
 #if configUSE_TRACE_FACILITY
 static traceHandle isr_dma_tx, isr_dma_rx, isr_spi;
@@ -159,9 +159,13 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	*reset_addr_list[_spi] |= reset_list[_spi];
 	*reset_addr_list[_spi] &= ~reset_list[_spi];
 	
-	gpio_af_init(_spi, _mosi);
-	gpio_af_init(_spi, _miso);
-	gpio_af_init(_spi, _clk);
+	gpio_af_init(_mosi);
+	gpio_af_init(_miso);
+	gpio_af_init(_clk);
+	
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
+	remap_dma(tx_dma);
+	remap_dma(rx_dma);
 	
 	SPI_TypeDef *spi_base = spi_list[_spi];
 	
@@ -186,7 +190,7 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	// Disable NSS hardware management
 	spi_base->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI;
 	
-	uint8_t presc = calc_presc(_spi, _baud);
+	uint8_t presc = calc_presc(_baud);
 	spi_base->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR);
 	
 	spi_base->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
@@ -221,7 +225,7 @@ void spi::baud(uint32_t baud)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_baud = baud;
-	uint8_t presc = calc_presc(_spi, _baud);
+	uint8_t presc = calc_presc(_baud);
 	
 	SPI_TypeDef *spi = spi_list[_spi];
 	
@@ -406,25 +410,43 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	return irq_res;
 }
 
-static void gpio_af_init(spi::spi_t spi, gpio &gpio)
+void spi::remap_dma(dma &dma)
+{
+#if defined(STM32F070x6) || defined(STM32F070xB) || defined(STM32F071xB) || \
+	defined(STM32F072xB) || defined(STM32F078xx)
+	switch(dma.get_ch())
+	{
+		case dma::CH_4:
+		case dma::CH_5:
+			if(_spi == spi::SPI_2)
+				SYSCFG->CFGR1 &= ~SYSCFG_CFGR1_SPI2_DMA_RMP;
+			break;
+		
+		case dma::CH_6:
+		case dma::CH_7:
+			if(_spi == spi::SPI_2)
+				SYSCFG->CFGR1 |= SYSCFG_CFGR1_SPI2_DMA_RMP;
+			break;
+		
+		default: break;
+	}
+#elif defined(STM32F091xC) || defined(STM32F098xx)
+#error Not implemented. Need to change DMA1_CSELR: "DMAx channel selection registers"
+#endif
+}
+
+void spi::gpio_af_init(gpio &gpio)
 {
 	GPIO_TypeDef *gpio_reg = gpio_list[gpio.port()];
 	uint8_t pin = gpio.pin();
-	if(pin < 8)
-	{
-		gpio_reg->AFR[0] &= ~(0x0F << (pin * 4));
-		gpio_reg->AFR[0] |= gpio_af_list[spi] << (pin * 4);
-	}
-	else
-	{
-		gpio_reg->AFR[1] &= ~(0x0F << ((pin - 8) * 4));
-		gpio_reg->AFR[1] |= gpio_af_list[spi] << ((pin - 8) * 4);
-	}
+	
+	gpio_reg->AFR[pin / 8] &= ~(GPIO_AFRL_AFSEL0 << ((pin % 8) * 4));
+	gpio_reg->AFR[pin / 8] |= spi2afr[_spi][gpio.port()] << ((pin % 8) * 4);
 }
 
-static uint8_t calc_presc(spi::spi_t spi, uint32_t baud)
+uint8_t spi::calc_presc(uint32_t baud)
 {
-	uint32_t div = rcc_get_freq(rcc_src_list[spi]) / baud;
+	uint32_t div = rcc_get_freq(rcc_src_list[_spi]) / baud;
 	
 	/* Baud rate is too low or too high */
 	ASSERT(div > 1 && div <= 256);

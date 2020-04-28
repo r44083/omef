@@ -288,7 +288,7 @@ void uart::remap_dma(dma &dma)
 		default: break;
 	}
 #elif defined(STM32F091xC) || defined(STM32F098xx)
-#error Not implemented
+#error Not implemented. Need to change DMA1_CSELR: "DMAx channel selection registers"
 #else
 	switch(dma.get_ch())
 	{
