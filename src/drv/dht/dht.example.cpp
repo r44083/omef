@@ -1,8 +1,11 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "gpio/gpio.hpp"
 #include "tim/tim.hpp"
 #include "exti/exti.hpp"
 #include "drv/singlewire/singlewire.hpp"
 #include "drv/dht/dht.hpp"
+#include "systick/systick.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -17,6 +20,8 @@ static void dht11_task(void *pvParameters)
 	while(1)
 	{
 		int8_t res = dht11->get(&val);
+		
+		vTaskDelay(500);
 		if(res != drv::dht::RES_OK)
 			continue;
 		
@@ -29,7 +34,7 @@ static void dht11_task(void *pvParameters)
 
 int main(void)
 {
-	// Example for STM32F4DISCOVERY development board
+	systick::init();
 	static gpio dht11_gpio(0, 7, gpio::mode::OD, 1);
 	static gpio dht11_exti_gpio(0, 10, gpio::mode::DI, 1);
 	
@@ -40,8 +45,7 @@ int main(void)
 	static drv::singlewire dht11_singlewire(dht11_gpio, dht11_tim, dht11_exti);
 	static drv::dht dht11(dht11_singlewire, drv::dht::DHT11);
 	
-	xTaskCreate(dht11_task, "dht11", configMINIMAL_STACK_SIZE * 1, &dht11,
-		tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(dht11_task, "dht11", configMINIMAL_STACK_SIZE, &dht11, 1, NULL);
 	
 	vTaskStartScheduler();
 }

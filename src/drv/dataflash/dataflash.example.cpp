@@ -1,7 +1,10 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "string.h"
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
 #include "spi/spi.hpp"
+#include "systick/systick.hpp"
 #include "drv/dataflash/dataflash.hpp"
 #include "drv/di/di.hpp"
 #include "FreeRTOS.h"
@@ -9,7 +12,7 @@
 
 using namespace hal;
 
-static void main_task(void *pvParameters)
+static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
 	
@@ -55,7 +58,7 @@ static void b1_cb(drv::di *di, bool state, void *ctx)
 
 int main(void)
 {
-	// Example for STM32F4DISCOVERY development board
+	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
 	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	
@@ -79,11 +82,9 @@ int main(void)
 	
 	b1_di.cb(b1_cb, &at45db);
 	
-	xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1, &green_led,
-		tskIDLE_PRIORITY + 1, NULL);
-	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE * 8, &b1_di,
-		tskIDLE_PRIORITY + 2, NULL);
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+		&green_led, 1, NULL);
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 100, &b1_di, 2, NULL);
 	
 	vTaskStartScheduler();
 }

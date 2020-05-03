@@ -1,6 +1,8 @@
+// Example for STM32F4DISCOVERY development board
 
 #include "gpio/gpio.hpp"
 #include "spi/spi.hpp"
+#include "systick/systick.hpp"
 #include "drv/sd/sd_spi.hpp"
 #include "drv/di/di.hpp"
 #include "FreeRTOS.h"
@@ -8,8 +10,6 @@
 
 using namespace hal;
 using namespace drv;
-
-static void sd_cb(di *di, bool state, void *ctx);
 
 static void di_task(void *pvParameters)
 {
@@ -21,8 +21,24 @@ static void di_task(void *pvParameters)
 	}
 }
 
+static void sd_cb(di *di, bool state, void *ctx)
+{
+	if(state)
+		return;
+	
+	sd *sd1 = (sd *)ctx;
+	
+	int8_t res = sd1->init();
+	if(res != sd::RES_OK)
+		return;
+	
+	sd_csd_t csd;
+	res = sd1->read_csd(&csd);
+}
+
 int main(void)
 {
+	systick::init();
 	static gpio spi1_mosi(0, 7, gpio::mode::AF, 0);
 	static gpio spi1_miso(0, 6, gpio::mode::AF, 0);
 	static gpio spi1_clk(0, 5, gpio::mode::AF, 0);
@@ -43,23 +59,7 @@ int main(void)
 	static di cd_di(sd_cd, 30, 1);
 	cd_di.cb(sd_cb, &sd1);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE * 3, &cd_di,
-		tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 200, &cd_di, 1, NULL);
 	
 	vTaskStartScheduler();
-}
-
-static void sd_cb(di *di, bool state, void *ctx)
-{
-	if(state)
-		return;
-	
-	sd *sd1 = (sd *)ctx;
-	
-	int8_t res = sd1->init();
-	if(res != sd::RES_OK)
-		return;
-	
-	sd_csd_t csd;
-	res = sd1->read_csd(&csd);
 }

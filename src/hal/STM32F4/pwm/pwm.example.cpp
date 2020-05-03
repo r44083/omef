@@ -1,13 +1,16 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "common/assert.h"
 #include "gpio/gpio.hpp"
 #include "pwm/pwm.hpp"
 #include "tim/tim.hpp"
+#include "systick/systick.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 
 using namespace hal;
 
-static void main_task(void *pvParameters)
+static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
 	while(1)
@@ -19,6 +22,7 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
+	systick::init();
 	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	static gpio pwm2_ch2_gpio(0, 1, gpio::mode::AF, 0);
 	
@@ -27,8 +31,8 @@ int main(void)
 	pwm2_ch2.duty(20);
 	pwm2_ch2.start();
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1, &green_led,
-		tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+		&green_led, 1, NULL);
 	
 	vTaskStartScheduler();
 }

@@ -7,6 +7,7 @@
 #include "spi/spi.hpp"
 #include "exti/exti.hpp"
 #include "tim/tim.hpp"
+#include "systick/systick.hpp"
 #include "drv/di/di.hpp"
 #include "drv/nrf24l01/nrf24l01.hpp"
 #include "FreeRTOS.h"
@@ -14,8 +15,6 @@
 
 using namespace hal;
 using namespace drv;
-
-static void b1_cb(di *di, bool state, void *ctx);
 
 static void di_task(void *pvParameters)
 {
@@ -27,8 +26,30 @@ static void di_task(void *pvParameters)
 	}
 }
 
+static void b1_cb(di *di, bool state, void *ctx)
+{
+	if(!state)
+		return;
+	
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
+	
+	nrf24l01 *nrf = (nrf24l01 *)ctx;
+	int8_t res;
+	ASSERT((res = nrf->init()));
+	ASSERT((res = nrf->tx_addr(0xA5A5)));
+	
+	char tx_buff[32] = {};
+	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
+	res = nrf->write(tx_buff, sizeof(tx_buff));
+	nrf->power_down();
+	
+	if(res == nrf24l01::RES_OK)
+		green_led.toggle();
+}
+
 int main(void)
 {
+	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
 	static gpio spi1_mosi_gpio(0, 7, gpio::mode::AF, 1);
 	static gpio spi1_miso_gpio(0, 6, gpio::mode::AF, 1);
@@ -55,27 +76,7 @@ int main(void)
 	static di b1_di(b1, 50, 0);
 	b1_di.cb(b1_cb, &nrf);
 	
-	ASSERT(xTaskCreate(di_task, "di", 400, &b1_di, 2, NULL) == pdPASS);
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
 	
 	vTaskStartScheduler();
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	static gpio green_led(2, 9, gpio::mode::DO, 0);
-	
-	nrf24l01 *nrf = (nrf24l01 *)ctx;
-	int8_t res = nrf->init();
-	res = nrf->tx_addr(0xA5A5);
-	
-	char tx_buff[32] = {};
-	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
-	res = nrf->write(tx_buff, sizeof(tx_buff));
-	nrf->power_down();
-	
-	if(res == nrf24l01::RES_OK)
-		green_led.toggle();
 }

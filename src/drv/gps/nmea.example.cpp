@@ -1,23 +1,26 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "common/assert.h"
 #include "dma/dma.hpp"
 #include "gpio/gpio.hpp"
 #include "uart/uart.hpp"
 #include "rtc/rtc.hpp"
+#include "systick/systick.hpp"
 #include "drv/gps/nmea.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 
 using namespace hal;
 
-struct main_task_ctx_t
+struct gps_task_ctx_t
 {
 	drv::nmea *nmea;
 	hal::gpio *led;
 };
 
-static void main_task(void *pvParameters)
+static void gps_task(void *pvParameters)
 {
-	main_task_ctx_t *ctx = (main_task_ctx_t *)pvParameters;
+	gps_task_ctx_t *ctx = (gps_task_ctx_t *)pvParameters;
 	
 	gpio *green_led = ctx->led;
 	QueueHandle_t from_nmea = ctx->nmea->get_queue();
@@ -38,6 +41,7 @@ static void main_task(void *pvParameters)
 
 int main(void)
 {
+	systick::init();
 	rtc::init(rtc::CLK_LSI);
 	struct tm time = {};
 	time.tm_year = 119;
@@ -58,10 +62,10 @@ int main(void)
 	
 	static drv::nmea gps(uart3, tskIDLE_PRIORITY + 1);
 	
-	main_task_ctx_t main_task_ctx = {.led = &green_led, .nmea = &gps};
+	gps_task_ctx_t gps_task_ctx = {.led = &green_led, .nmea = &gps};
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 10,
-		&main_task_ctx, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	xTaskCreate(gps_task, "gps", configMINIMAL_STACK_SIZE + 50, &gps_task_ctx,
+		1, NULL);
 	
 	vTaskStartScheduler();
 }

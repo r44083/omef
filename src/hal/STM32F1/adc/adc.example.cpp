@@ -1,13 +1,16 @@
+// Example for STM32VLDISCOVERY development board
+
 #include "common/assert.h"
 #include "adc/adc.hpp"
 #include "dma/dma.hpp"
 #include "gpio/gpio.hpp"
+#include "systick/systick.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 
 using namespace hal;
 
-static void main_task(void *pvParameters)
+static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
 	while(1)
@@ -17,13 +20,14 @@ static void main_task(void *pvParameters)
 	}
 }
 
-void adc::adc_clbk(adc *adc, adc::adc_ch_t ch, float val, void *ctx)
+static void adc_clbk(adc *adc, adc::adc_ch_t ch, float val, void *ctx)
 {
 	// Handle adc value here
 }
 
 int main(void)
 {
+	systick::init();
 	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	static gpio adc_gpio(0, 0, gpio::mode::AN);
 	
@@ -41,8 +45,8 @@ int main(void)
 	adc_1.add_clbk(adc_chnls[0], adc_clbk, NULL);
 	adc_1.enable(true);
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1,
-		&green_led, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+		&green_led, 1, NULL);
 	
 	vTaskStartScheduler();
 }

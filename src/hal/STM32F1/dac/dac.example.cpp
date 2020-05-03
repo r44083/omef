@@ -1,13 +1,16 @@
+// Example for STM32VLDISCOVERY development board
+
 #include "common/assert.h"
 #include "dac/dac.hpp"
 #include "gpio/gpio.hpp"
 #include "tim/tim.hpp"
+#include "systick/systick.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 
 using namespace hal;
 
-static void main_task(void *pvParameters)
+static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
 	while(1)
@@ -37,6 +40,7 @@ static void tim_cb(tim *tim, void *ctx)
 
 int main(void)
 {
+	systick::init();
 	static gpio dac1_gpio(0, 4, gpio::mode::AN, 0);
 	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	
@@ -47,8 +51,8 @@ int main(void)
 	tim6.us(32); // Sine wave frequency is 1 kHz (sin[32])
 	tim6.start(true);
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 1,
-		&green_led, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+		&green_led, 1, NULL);
 	
 	vTaskStartScheduler();
 }

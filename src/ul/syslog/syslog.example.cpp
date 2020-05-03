@@ -1,3 +1,5 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "common/assert.h"
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
@@ -8,7 +10,7 @@
 
 using namespace hal;
 
-static void main_task(void *pvParameters)
+static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
 	while(1)
@@ -43,8 +45,8 @@ int main(void)
 	
 	log().add_output(uart_write, &uart3);
 	
-	ASSERT(xTaskCreate(main_task, "main", configMINIMAL_STACK_SIZE * 2,
-		&green_led, tskIDLE_PRIORITY + 1, NULL) == pdPASS);
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+		&green_led, 1, NULL);
 	
 	vTaskStartScheduler();
 }

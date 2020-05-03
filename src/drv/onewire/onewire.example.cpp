@@ -1,6 +1,8 @@
+// Example for STM32F4DISCOVERY development board
 
 #include "gpio/gpio.hpp"
 #include "uart/uart.hpp"
+#include "systick/systick.hpp"
 #include "drv/di/di.hpp"
 #include "drv/onewire/onewire.hpp"
 #include "FreeRTOS.h"
@@ -8,8 +10,6 @@
 
 using namespace hal;
 using namespace drv;
-
-static void b1_cb(di *di, bool state, void *ctx);
 
 static void di_task(void *pvParameters)
 {
@@ -21,8 +21,25 @@ static void di_task(void *pvParameters)
 	}
 }
 
+static void b1_cb(di *di, bool state, void *ctx)
+{
+	if(!state)
+		return;
+	
+	onewire *_onewire = (onewire *)ctx;
+	
+	uint64_t rom = 0;
+	int8_t res = _onewire->read_rom(&rom);
+	if(res)
+		return;
+	
+	uint8_t tx_buff[3] = {0x01, 0x02, 0x03};
+	res = _onewire->tx(rom, tx_buff, sizeof(tx_buff));
+}
+
 int main(void)
 {
+	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
 	static gpio uart3_tx_gpio(3, 8, gpio::mode::AF, 0);
 	static gpio uart3_rx_gpio(1, 11, gpio::mode::AF, 0);
@@ -40,24 +57,7 @@ int main(void)
 	static di b1_di(b1, 50, 1);
 	b1_di.cb(b1_cb, &_onewire);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE * 2, &b1_di,
-		tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
 	
 	vTaskStartScheduler();
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	onewire *_onewire = (onewire *)ctx;
-	
-	uint64_t rom = 0;
-	int8_t res = _onewire->read_rom(&rom);
-	if(res)
-		return;
-	
-	uint8_t tx_buff[3] = {0x01, 0x02, 0x03};
-	res = _onewire->tx(rom, tx_buff, sizeof(tx_buff));
 }

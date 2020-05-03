@@ -14,8 +14,8 @@ constexpr size_t neo7m_nmea_msg_number = 12;
 nmea::nmea(hal::uart &uart, UBaseType_t task_priority):
 	_uart(uart)
 {
-	ASSERT(xTaskCreate(this->task, "nmea", 700, this, task_priority,
-		&task_hndlr) == pdPASS);
+	ASSERT(xTaskCreate(this->task, "nmea", configMINIMAL_STACK_SIZE + 500, this,
+		task_priority, &task_hndlr) == pdPASS);
 	
 	ASSERT(queue = xQueueCreate(neo7m_nmea_msg_number, sizeof(queue_t)));
 }

@@ -7,6 +7,7 @@
 #include "spi/spi.hpp"
 #include "exti/exti.hpp"
 #include "tim/tim.hpp"
+#include "systick/systick.hpp"
 #include "drv/nrf24l01/nrf24l01.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -16,17 +17,13 @@ using namespace drv;
 
 static void nrf_task(void *pvParameters)
 {
-	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	nrf24l01 *nrf = (nrf24l01 *)pvParameters;
 	
-	int8_t res = nrf->init();
-	if(res)
-		return;
+	int8_t res;
+	ASSERT((res = nrf->init()));
+	ASSERT((res = nrf->open_pipe(1, 0xA5A5)));
 	
-	res = nrf->open_pipe(1, 0xA5A5);
-	if(res)
-		return;
-	
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	while(1)
 	{
 		nrf24l01::rx_packet_t packet;
@@ -39,11 +36,13 @@ static void nrf_task(void *pvParameters)
 		
 		memset(&packet, 0, sizeof(packet));
 	}
-	res = nrf->close_pipe(1);
+	//res = nrf->close_pipe(1);
+	//vTaskDelete(NULL);
 }
 
 int main(void)
 {
+	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
 	static gpio spi1_mosi_gpio(1, 5, gpio::mode::AF, 1);
 	static gpio spi1_miso_gpio(1, 4, gpio::mode::AF, 1);
@@ -67,7 +66,7 @@ int main(void)
 	static nrf24l01 nrf(nrf24l01_spi, nrf24l01_csn, nrf24l01_ce, nrf24l01_exti,
 		tim6);
 	
-	ASSERT(xTaskCreate(nrf_task, "nrf", 300, &nrf, 2, NULL) == pdPASS);
+	xTaskCreate(nrf_task, "nrf", configMINIMAL_STACK_SIZE, &nrf, 1, NULL);
 	
 	vTaskStartScheduler();
 }

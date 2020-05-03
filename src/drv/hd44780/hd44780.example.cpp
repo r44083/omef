@@ -1,5 +1,8 @@
+// Example for STM32F4DISCOVERY development board
+
 #include "gpio/gpio.hpp"
 #include "tim/tim.hpp"
+#include "systick/systick.hpp"
 #include "drv/hd44780/hd44780.hpp"
 #include "drv/di/di.hpp"
 #include "FreeRTOS.h"
@@ -7,8 +10,6 @@
 
 using namespace hal;
 using namespace drv;
-
-static void b1_cb(di *di, bool state, void *ctx);
 
 static void di_task(void *pvParameters)
 {
@@ -18,31 +19,6 @@ static void di_task(void *pvParameters)
 		cd_di->poll();
 		vTaskDelay(1);
 	}
-}
-
-int main(void)
-{
-	static gpio b1(0, 0, gpio::mode::DI);
-	
-	static gpio rs(0, 5, gpio::mode::DO);
-	static gpio rw(0, 4, gpio::mode::DO);
-	static gpio e(0, 3, gpio::mode::DO);
-	static gpio db4(0, 6, gpio::mode::DO);
-	static gpio db5(0, 7, gpio::mode::DO);
-	static gpio db6(0, 8, gpio::mode::DO);
-	static gpio db7(0, 10, gpio::mode::DO);
-	
-	static tim tim6(tim::TIM_6);
-	
-	static hd44780 lcd(rs, rw, e, db4, db5, db6, db7, tim6);
-	
-	static di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &lcd);
-	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE * 3, &b1_di,
-		tskIDLE_PRIORITY + 1, NULL);
-	
-	vTaskStartScheduler();
 }
 
 static void b1_cb(di *di, bool state, void *ctx)
@@ -74,4 +50,29 @@ static void b1_cb(di *di, bool state, void *ctx)
 	lcd->print(64, char(0)); // goto the line 2 and print custom symbol
 	lcd->print(20, "Line 3");
 	lcd->print(84, "Line 4");
+}
+
+int main(void)
+{
+	systick::init();
+	static gpio b1(0, 0, gpio::mode::DI);
+	
+	static gpio rs(0, 5, gpio::mode::DO);
+	static gpio rw(0, 4, gpio::mode::DO);
+	static gpio e(0, 3, gpio::mode::DO);
+	static gpio db4(0, 6, gpio::mode::DO);
+	static gpio db5(0, 7, gpio::mode::DO);
+	static gpio db6(0, 8, gpio::mode::DO);
+	static gpio db7(0, 10, gpio::mode::DO);
+	
+	static tim tim6(tim::TIM_6);
+	
+	static hd44780 lcd(rs, rw, e, db4, db5, db6, db7, tim6);
+	
+	static di b1_di(b1, 50, 1);
+	b1_di.cb(b1_cb, &lcd);
+	
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	
+	vTaskStartScheduler();
 }
