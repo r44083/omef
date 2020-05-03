@@ -8,7 +8,6 @@
 using namespace hal;
 
 static void tim_hw_cb(void *arg);
-static void calc_clk(tim::tim_t tim, uint32_t us, uint8_t *div, uint32_t *load);
 
 tim::tim(tim_t tim):
 	_tim(tim),
@@ -27,11 +26,11 @@ tim::tim(tim_t tim):
 
 tim::~tim()
 {
+	_xt_isr_mask(1 << ETS_FRC_TIMER1_INUM);
+	_xt_isr_attach(ETS_FRC_TIMER1_INUM, NULL, NULL);
+	TM1_EDGE_INT_DISABLE();
 	frc1.ctrl.en = 0;
 	frc1.ctrl.val = 0;
-	_xt_isr_mask(1 << ETS_FRC_TIMER1_INUM);
-	TM1_EDGE_INT_DISABLE();
-	_xt_isr_attach(ETS_FRC_TIMER1_INUM, NULL, NULL);
 }
 
 void tim::cb(cb_t cb, void *ctx)
@@ -50,7 +49,7 @@ void tim::us(uint32_t us)
 	
 	uint8_t div;
 	uint32_t load;
-	calc_clk(_tim, _us, &div, &load);
+	calc_clk(_tim, _us, div, load);
 	
 	_xt_isr_mask(1 << ETS_FRC_TIMER1_INUM);
 	frc1.ctrl.val = 0;
@@ -63,7 +62,7 @@ void tim::start(bool is_cyclic)
 {
 	ASSERT(_us > 0);
 	ASSERT(_cb);
-	/* This action allowed only when TIM is disabled */
+	// This action allowed only when TIM is disabled
 	ASSERT(!frc1.ctrl.en);
 	
 	_xt_isr_mask(1 << ETS_FRC_TIMER1_INUM);
@@ -86,10 +85,10 @@ bool tim::is_expired() const
 	return !frc1.ctrl.en;
 }
 
-static void calc_clk(tim::tim_t tim, uint32_t us, uint8_t *div, uint32_t *load)
+void tim::calc_clk(tim_t tim, uint32_t us, uint8_t &div, uint32_t &load)
 {
-	constexpr uint32_t max_load = 0x7FFFFF;
-	constexpr uint8_t div_step = 4;
+	constexpr auto max_load = 0x7FFFFF;
+	constexpr auto div_step = 4;
 	enum
 	{
 		TIMER_CLKDIV_1 = 0,
@@ -97,16 +96,16 @@ static void calc_clk(tim::tim_t tim, uint32_t us, uint8_t *div, uint32_t *load)
 		TIMER_CLKDIV_256 = div_step * 2
 	};
 	
-	*div = TIMER_CLKDIV_1;
-	*load = us * (APB_CLK_FREQ / 1000000);
+	div = TIMER_CLKDIV_1;
+	load = us * (APB_CLK_FREQ / 1000000);
 	
-	while(*load > max_load)
+	while(load > max_load)
 	{
-		*div += div_step;
-		*load >>= div_step;
-		ASSERT(*div <= TIMER_CLKDIV_256);
+		div += div_step;
+		load >>= div_step;
+		ASSERT(div <= TIMER_CLKDIV_256);
 	}
-	ASSERT(*load);
+	ASSERT(load);
 }
 
 extern "C" void tim_irq_hndlr(hal::tim *obj)

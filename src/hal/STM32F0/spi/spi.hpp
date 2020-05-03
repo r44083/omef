@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
 #include "FreeRTOS.h"
@@ -27,14 +26,14 @@ class spi
 
 		enum cpol_t
 		{
-			CPOL_0,
-			CPOL_1
+			CPOL_0, // Clock is low when inactive
+			CPOL_1  // Clock is high when inactive
 		};
 
 		enum cpha_t
 		{
-			CPHA_0,
-			CPHA_1
+			CPHA_0, // Data is valid on clock leading edge
+			CPHA_1  // Data is valid on clock trailing edge
 		};
 
 		enum bit_order_t
@@ -75,25 +74,21 @@ class spi
 		cpol_t _cpol;
 		cpha_t _cpha;
 		bit_order_t _bit_order;
-		
 		SemaphoreHandle_t api_lock;
 		TaskHandle_t task;
 		res_t irq_res;
-		
 		gpio &_mosi;
 		gpio &_miso;
 		gpio &_clk;
 		gpio *_cs;
-		
 		dma &tx_dma;
 		void *tx_buff;
-		
 		dma &rx_dma;
 		void *rx_buff;
 		
-		void remap_dma(dma &dma);
-		void gpio_af_init(gpio &gpio);
-		uint8_t calc_presc(uint32_t baud);
+		static void remap_dma(spi_t spi, dma &dma);
+		static void gpio_af_init(spi_t spi, gpio &gpio);
+		static uint8_t calc_presc(spi_t spi, uint32_t baud);
 		static void on_dma_tx(dma *dma, dma::event_t event, void *ctx);
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
 		friend void ::spi_irq_hndlr(spi *obj);

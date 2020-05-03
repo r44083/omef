@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "gpio/gpio.hpp"
 
 namespace hal { class exti; }

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
 #include "FreeRTOS.h"
@@ -70,21 +69,18 @@ class uart
 		uint32_t _baud;
 		stopbit_t _stopbit;
 		parity_t _parity;
-		
 		dma &tx_dma;
 		gpio &tx_gpio;
 		int8_t tx_irq_res;
-		
 		dma &rx_dma;
 		gpio &rx_gpio;
 		uint16_t *rx_cnt;
 		int8_t rx_irq_res;
-		
 		SemaphoreHandle_t api_lock;
 		TaskHandle_t task;
 		
-		void remap_dma(dma &dma);
-		void gpio_af_init(gpio &gpio);
+		static void remap_dma(uart_t uart, dma &dma);
+		static void gpio_af_init(uart_t uart, gpio &gpio);
 		static void on_dma_tx(dma *dma, dma::event_t event, void *ctx);
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
 		friend void ::uart_irq_hndlr(uart *obj);

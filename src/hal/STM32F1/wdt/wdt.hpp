@@ -12,6 +12,7 @@ class wdt
 		static void reload();
 	
 	private:
-	wdt() {}
+		wdt() {}
+		static void calc_clk(uint16_t ms, uint16_t &presc, uint16_t &reload);
 };
 }

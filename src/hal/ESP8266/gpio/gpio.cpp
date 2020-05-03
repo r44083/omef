@@ -14,7 +14,7 @@ gpio::gpio(uint8_t port, uint8_t pin, enum mode mode, bool state):
 	ASSERT(_port < ports);
 	ASSERT(_pin < pins);
 	
-	gpio::mode(_mode, state);
+	set_mode(_mode, state);
 }
 
 gpio::~gpio()
@@ -72,17 +72,18 @@ void gpio::toggle() const
 	}
 }
 
-void gpio::mode(enum mode mode, bool state)
+void gpio::set_mode(enum mode mode, bool state)
 {
 	if(_pin == gpio_priv::rtc_pin)
 	{
-		ASSERT(_mode != mode::DI || !state); // GPIO16 has only pulldown input mode
-		ASSERT(_mode != mode::OD); // GPIO16 doesn't have open drain mode
+		ASSERT(mode != gpio::mode::DI || !state); // GPIO16 has only pulldown input mode
+		ASSERT(mode != gpio::mode::OD); // GPIO16 doesn't have open drain mode
 	}
 	
+	_mode = mode;
 	switch(_mode)
 	{
-		case mode::DO:
+		case gpio::mode::DO:
 			if(_pin != gpio_priv::rtc_pin)
 			{
 				PIN_FUNC_SELECT(gpio_priv::mux[_pin], gpio_priv::func[_pin][0]);
@@ -103,14 +104,14 @@ void gpio::mode(enum mode mode, bool state)
 			}
 			break;
 		
-		case mode::OD:
+		case gpio::mode::OD:
 			PIN_FUNC_SELECT(gpio_priv::mux[_pin], gpio_priv::func[_pin][0]);
 			GPIO.enable_w1ts |= 1 << _pin;
 			GPIO.pin[_pin].driver = 1;
 			set(state);
 			break;
 		
-		case mode::DI:
+		case gpio::mode::DI:
 			if(_pin != gpio_priv::rtc_pin)
 			{
 				PIN_FUNC_SELECT(gpio_priv::mux[_pin], gpio_priv::func[_pin][0]);
@@ -141,10 +142,10 @@ void gpio::mode(enum mode mode, bool state)
 			}
 			break;
 		
-		case mode::AF1:
-		case mode::AF2:
-		case mode::AF3:
-		case mode::AF4:
+		case gpio::mode::AF1:
+		case gpio::mode::AF2:
+		case gpio::mode::AF3:
+		case gpio::mode::AF4:
 			if(_pin == gpio_priv::rtc_pin)
 			{
 				// Not implemented yet
@@ -152,9 +153,11 @@ void gpio::mode(enum mode mode, bool state)
 			}
 			else
 			{
-				// Normalize _mode (- MODE_DI) to access proper row from func list
+				/* Normalize _mode (- gpio::mode::DI) to access proper row from
+				func list */
 				PIN_FUNC_SELECT(gpio_priv::mux[_pin], gpio_priv::func[_pin]
-					[static_cast<uint8_t>(_mode) - static_cast<uint8_t>(mode::DI)]);
+					[static_cast<uint8_t>(_mode) - static_cast<uint8_t>
+					(gpio::mode::DI)]);
 			}
 			break;
 	}

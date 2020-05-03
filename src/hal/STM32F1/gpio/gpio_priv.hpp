@@ -4,7 +4,7 @@
 
 namespace hal::gpio_priv
 {
-constexpr GPIO_TypeDef *const ports[gpio::ports] =
+constexpr GPIO_TypeDef *const gpio[gpio::ports] =
 {
 	GPIOA, GPIOB, GPIOC, GPIOD,
 #if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
@@ -23,7 +23,7 @@ constexpr GPIO_TypeDef *const ports[gpio::ports] =
 #endif
 };
 
-constexpr uint32_t rcc[gpio::ports] =
+constexpr uint32_t rcc_en[gpio::ports] =
 {
 	RCC_APB2ENR_IOPAEN, RCC_APB2ENR_IOPBEN, RCC_APB2ENR_IOPCEN,
 	RCC_APB2ENR_IOPDEN, RCC_APB2ENR_IOPEEN,

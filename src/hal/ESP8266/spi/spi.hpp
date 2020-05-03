@@ -73,20 +73,31 @@ class spi
 		cpol_t _cpol;
 		cpha_t _cpha;
 		bit_order_t _bit_order;
-		
 		SemaphoreHandle_t api_lock;
 		TaskHandle_t task;
 		res_t irq_res;
-		
 		gpio &_mosi;
 		gpio &_miso;
 		gpio &_clk;
 		gpio *_cs;
-		
 		uint8_t *tx_buff;
 		uint8_t *rx_buff;
 		size_t remain;
 		
+		enum spi_div_t
+		{
+			SPI_DIV_80MHz = 1,
+			SPI_DIV_40MHz = 2,
+			SPI_DIV_20MHz = 4,
+			SPI_DIV_16MHz = 5,
+			SPI_DIV_10MHz = 8,
+			SPI_DIV_8MHz = 10,
+			SPI_DIV_5MHz = 16,
+			SPI_DIV_4MHz = 20,
+			SPI_DIV_2MHz = 40
+		};
+		static void calc_clk(spi_t spi, uint32_t baud, spi_div_t &div,
+			uint16_t &prediv);
 		void handle_spi0_enabled_irq(spi_t spi);
 		friend void ::spi_irq_hndlr(spi *obj);
 };

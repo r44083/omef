@@ -18,24 +18,9 @@ constexpr uint32_t irq_sta_bits = (SPI_TRANS_DONE | SPI_SLV_WR_STA_DONE |
 constexpr uint32_t irq_ena_bits = (SPI_TRANS_DONE_EN | SPI_SLV_WR_STA_DONE_EN |
 	SPI_SLV_RD_STA_DONE_EN | SPI_SLV_WR_BUF_DONE_EN | SPI_SLV_RD_BUF_DONE_EN);
 
-enum spi_div_t
-{
-	SPI_DIV_80MHz = 1,
-	SPI_DIV_40MHz = 2,
-	SPI_DIV_20MHz = 4,
-	SPI_DIV_16MHz = 5,
-	SPI_DIV_10MHz = 8,
-	SPI_DIV_8MHz = 10,
-	SPI_DIV_5MHz = 16,
-	SPI_DIV_4MHz = 20,
-	SPI_DIV_2MHz = 40
-};
-
 static DRAM_ATTR spi_dev_t *const spi_devs[] = {&SPI0, &SPI1};
 
 static void spi_hw_cb(void *arg);
-static void calc_clk(spi::spi_t spi, uint32_t baud, spi_div_t *div,
-	uint16_t *prediv);
 
 spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	bit_order_t bit_order, gpio &mosi, gpio &miso, gpio &clk):
@@ -99,7 +84,7 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	
 	spi_div_t div;
 	uint16_t prediv;
-	calc_clk(_spi, _baud, &div, &prediv);
+	calc_clk(_spi, _baud, div, prediv);
 	
 	if(div == SPI_DIV_80MHz)
 	{
@@ -119,7 +104,7 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	}
 	
 	/* SPI0 irq is enabled by default. It leads to false positives irq handler
-	   calls. So disable it if SPI0 isn't initialized explicitly */
+	calls. So disable it if SPI0 isn't initialized explicitly */
 	handle_spi0_enabled_irq(_spi);
 	
 	_xt_isr_attach(ETS_SPI_INUM, spi_hw_cb, this);
@@ -131,7 +116,7 @@ spi::~spi()
 	_xt_isr_mask(1 << ETS_SPI_INUM);
 	_xt_isr_attach(ETS_SPI_INUM, NULL, NULL);
 	spi_devs[_spi]->slave.val &= ~(irq_ena_bits | irq_sta_bits);
-	
+	xSemaphoreGive(api_lock);
 	vSemaphoreDelete(api_lock);
 }
 
@@ -145,7 +130,7 @@ void spi::baud(uint32_t baud)
 	
 	spi_div_t div;
 	uint16_t prediv;
-	calc_clk(_spi, _baud, &div, &prediv);
+	calc_clk(_spi, _baud, div, prediv);
 	
 	if(div == SPI_DIV_80MHz)
 	{
@@ -353,11 +338,10 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, size_t size, gpio *cs)
 	return irq_res;
 }
 
-static void calc_clk(spi::spi_t spi, uint32_t baud, spi_div_t *div,
-	uint16_t *prediv)
+void spi::calc_clk(spi_t spi, uint32_t baud, spi_div_t &div, uint16_t &prediv)
 {
-	*div = SPI_DIV_2MHz;
-	*prediv = 0;
+	div = SPI_DIV_2MHz;
+	prediv = 0;
 }
 
 void spi::handle_spi0_enabled_irq(spi_t spi)

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
 #include "FreeRTOS.h"
@@ -76,22 +75,19 @@ class spi
 		cpol_t _cpol;
 		cpha_t _cpha;
 		bit_order_t _bit_order;
-		
 		SemaphoreHandle_t api_lock;
 		TaskHandle_t task;
 		res_t irq_res;
-		
 		gpio &_mosi;
 		gpio &_miso;
 		gpio &_clk;
 		gpio *_cs;
-		
 		dma &tx_dma;
 		void *tx_buff;
-		
 		dma &rx_dma;
 		void *rx_buff;
 		
+		static uint8_t calc_presc(spi_t spi, uint32_t baud);
 		static void on_dma_tx(dma *dma, dma::event_t event, void *ctx);
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
 		friend void ::spi_irq_hndlr(spi *obj);

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
 #include "dma/dma.hpp"
 
 namespace hal
@@ -77,21 +76,23 @@ class adc
 		void enable(bool enable);
 	
 	private:
-		adc_t       _adc;
-		adc_ch_t    *_ch_list;
-		size_t      _ch_list_size;
-		adc_tim_t   _tim;
-		dma         &_dma;
+		adc_t _adc;
+		adc_ch_t *_ch_list;
+		size_t _ch_list_size;
+		adc_tim_t _tim;
+		dma &_dma;
 		adc_resol_t _resol;
-		uint32_t    _freq;
-		uint16_t    *_dma_buff;
-		uint8_t     _num_of_samples;
+		uint32_t _freq;
+		uint16_t *_dma_buff;
+		uint8_t _num_of_samples;
 		struct
 		{
 			adc_cb_t clbk;
-			void     *ctx;
+			void *ctx;
 		} _clbks[ADC_CH_END];
 		
+		void tim_init(uint32_t freq);
+		static void calc_clk(adc_tim_t tim, uint32_t freq, uint16_t &presc, uint16_t &reload);
 		void init_regular_chnls(uint8_t index, adc_ch_t ch);
 		static void on_dma(dma *dma, dma::event_t event, void *ctx);
 };

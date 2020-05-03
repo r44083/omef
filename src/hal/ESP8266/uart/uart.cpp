@@ -86,13 +86,13 @@ uart::uart(uart_t uart, uint32_t baud, stopbit_t stopbit, parity_t parity,
 
 uart::~uart()
 {
+	_xt_isr_mask(1 << ETS_UART_INUM);
+	_xt_isr_attach(ETS_UART_INUM, NULL, NULL);
 	uart_dev_t &uart_dev = *uart_devs[_uart];
 	uart_dev.int_ena.val &= ~(rx_ena_bits | tx_ena_bits | err_ena_bits);
 	uart_dev.conf0.val |= UART_TXFIFO_RST | UART_RXFIFO_RST;
 	uart_dev.conf0.val &= ~(UART_TXFIFO_RST | UART_RXFIFO_RST);
-	
-	_xt_isr_mask(1 << ETS_UART_INUM);
-	_xt_isr_attach(ETS_UART_INUM, NULL, NULL);
+	xSemaphoreGive(api_lock);
 	vSemaphoreDelete(api_lock);
 }
 

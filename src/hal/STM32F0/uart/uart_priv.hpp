@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../gpio/gpio_priv.hpp"
+#include "rcc/rcc.hpp"
+#include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F0xx/Include/stm32f0xx.h"
 
 namespace hal::uart_priv
 {
-constexpr auto irq_priority = 6;
-
-constexpr USART_TypeDef *const uart_list[uart::UART_END] =
+constexpr USART_TypeDef *const uart[uart::UART_END] =
 {
 	USART1,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
@@ -38,7 +37,7 @@ constexpr USART_TypeDef *const uart_list[uart::UART_END] =
 #endif
 };
 
-constexpr IRQn_Type irq_list[uart::UART_END] =
+constexpr IRQn_Type irqn[uart::UART_END] =
 {
 	USART1_IRQn,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
@@ -74,7 +73,7 @@ constexpr IRQn_Type irq_list[uart::UART_END] =
 #endif
 };
 
-constexpr uint32_t rcc_list[uart::UART_END] =
+constexpr uint32_t rcc_en[uart::UART_END] =
 {
 	RCC_APB2ENR_USART1EN,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
@@ -105,7 +104,7 @@ constexpr uint32_t rcc_list[uart::UART_END] =
 #endif
 };
 
-constexpr uint32_t reset_list[uart::UART_END] =
+constexpr uint32_t rcc_rst[uart::UART_END] =
 {
 	RCC_APB2RSTR_USART1RST,
 #if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
@@ -136,19 +135,19 @@ constexpr uint32_t reset_list[uart::UART_END] =
 #endif
 };
 
-constexpr volatile uint32_t *rcc_addr_list[uart::UART_END] =
+constexpr volatile uint32_t *rcc_en_reg[uart::UART_END] =
 {
 	&RCC->APB2ENR, &RCC->APB1ENR, &RCC->APB1ENR, &RCC->APB1ENR, &RCC->APB1ENR,
 	&RCC->APB2ENR, &RCC->APB2ENR, &RCC->APB2ENR
 };
 
-constexpr volatile uint32_t *reset_addr_list[uart::UART_END] =
+constexpr volatile uint32_t *rcc_rst_reg[uart::UART_END] =
 {
 	&RCC->APB2RSTR, &RCC->APB1RSTR, &RCC->APB1RSTR, &RCC->APB1RSTR,
 	&RCC->APB1RSTR, &RCC->APB2RSTR, &RCC->APB2RSTR, &RCC->APB2RSTR
 };
 
-constexpr rcc_src_t rcc_src_list[uart::UART_END] =
+constexpr rcc_src_t rcc_src[uart::UART_END] =
 {
 	RCC_SRC_APB2, RCC_SRC_APB1, RCC_SRC_APB1, RCC_SRC_APB1, RCC_SRC_APB1,
 	RCC_SRC_APB2, RCC_SRC_APB2, RCC_SRC_APB2

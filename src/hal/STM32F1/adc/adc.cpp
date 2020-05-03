@@ -1,62 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
-
+#include <limits>
 #include "common/assert.h"
 #include "adc.hpp"
+#include "adc_priv.hpp"
 #include "rcc/rcc.hpp"
 #include "CMSIS/Device/STM32F1xx/Include/stm32f1xx.h"
 
 using namespace hal;
-
-#define MAX_TIM_RESOL 0xFFFF
-#define V_REF (float)3.3
-
-static TIM_TypeDef *const tim_list[adc::ADC_TIM_END] =
-{
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F103x6) || \
-	defined(STM32F103xB) || defined(STM32F103xE) || defined(STM32F103xG) || \
-	defined(STM32F105xC) || defined(STM32F107xC)
-	TIM1,
-#else
-	NULL,
-#endif
-	TIM2, TIM3,
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
-	defined(STM32F101xE) || defined(STM32F101xG) || defined(STM32F102xB) || \
-	defined(STM32F103xB) || defined(STM32F103xE) || defined(STM32F103xG) || \
-	defined(STM32F105xC) || defined(STM32F107xC)
-	TIM4,
-#else
-	NULL,
-#endif
-};
-
-static uint32_t const rcc_list[adc::ADC_TIM_END] =
-{
-	RCC_APB2ENR_TIM1EN, RCC_APB1ENR_TIM2EN, RCC_APB1ENR_TIM3EN,
-#if defined(STM32F100xB) || defined(STM32F100xE) || defined(STM32F101xB) || \
-	defined(STM32F101xE) || defined(STM32F101xG) || defined(STM32F102xB) || \
-	defined(STM32F103xB) || defined(STM32F103xE) || defined(STM32F103xG) || \
-	defined(STM32F105xC) || defined(STM32F107xC)
-	RCC_APB1ENR_TIM4EN,
-#else
-	0,
-#endif
-};
-
-static volatile uint32_t *const rcc_bus_list[adc::ADC_TIM_END] =
-{
-	&RCC->APB2ENR, &RCC->APB1ENR, &RCC->APB1ENR, &RCC->APB1ENR
-};
-
-static rcc_src_t const rcc_src_list[adc::ADC_TIM_END] =
-{
-	RCC_SRC_APB2, RCC_SRC_APB1, RCC_SRC_APB1, RCC_SRC_APB1
-};
-
-static void tim_init(adc::adc_tim_t tim, uint32_t freq);
-static void calc_clk(adc::adc_tim_t tim, uint32_t freq, uint16_t &presc,
-	uint16_t &reload);
 
 adc::adc(adc_t adc, adc_ch_t ch_list[], size_t ch_list_size, adc_tim_t tim,
 	hal::dma &dma, adc_resol_t resol, uint32_t freq, uint8_t num_of_samples):
@@ -130,18 +81,17 @@ adc::adc(adc_t adc, adc_ch_t ch_list[], size_t ch_list_size, adc_tim_t tim,
 	_dma.size(_ch_list_size * _num_of_samples);
 	_dma.start_cyclic(on_dma, this);
 	
-	tim_init(_tim, _freq);
+	tim_init(_tim);
 }
 
 adc::~adc()
 {
-	enable(false);
+	adc_priv::tim[_tim]->CR1 &= ~TIM_CR1_CEN;
+	adc_priv::tim[_tim]->CNT = 0;
+	RCC->APB2ENR &= ~RCC_APB2ENR_ADC1EN;
 	
 	if(_dma_buff)
-	{
 		free(_dma_buff);
-		_dma_buff = NULL;
-	}
 }
 
 void adc::resol(adc_resol_t resol)
@@ -175,13 +125,13 @@ void adc::enable(bool enable)
 {
 	if(enable)
 	{
-		tim_list[_tim]->CNT = 0;
-		tim_list[_tim]->CR1 |= TIM_CR1_CEN;
+		adc_priv::tim[_tim]->CNT = 0;
+		adc_priv::tim[_tim]->CR1 |= TIM_CR1_CEN;
 	}
 	else
 	{
-		tim_list[_tim]->CR1 &= ~TIM_CR1_CEN;
-		tim_list[_tim]->CNT = 0;
+		adc_priv::tim[_tim]->CR1 &= ~TIM_CR1_CEN;
+		adc_priv::tim[_tim]->CNT = 0;
 	}
 }
 
@@ -230,50 +180,52 @@ void adc::on_dma(dma *dma, dma::event_t event, void *ctx)
 			voltage += obj->_dma_buff[j];
 		}
 		voltage /= obj->_num_of_samples;
-		voltage = (voltage / 4095) * V_REF;
+		voltage = (voltage / 4095) * 3.3; // vref = 3.3v
 		
 		obj->_clbks[obj->_ch_list[i]].clbk(obj, obj->_ch_list[i], voltage,
 			obj->_clbks[obj->_ch_list[i]].ctx);
 	}
 }
 
-static void tim_init(adc::adc_tim_t tim, uint32_t freq)
+void adc::tim_init(uint32_t freq)
 {
 	uint16_t presc = 0;
 	uint16_t reload = 0;
-	calc_clk(tim, freq, presc, reload);
+	calc_clk(_tim, freq, presc, reload);
 	
-	*rcc_bus_list[tim] |= rcc_list[tim];
+	*adc_priv::rcc_en_reg[_tim] |= adc_priv::rcc_en[_tim];
 	
-	tim_list[tim]->PSC = presc;
-	tim_list[tim]->ARR = reload;
+	TIM_TypeDef *tim = adc_priv::tim[_tim];
+	
+	tim->PSC = presc;
+	tim->ARR = reload;
 	
 	// Enable generation of TRGO event
-	tim_list[tim]->CR2 &= ~TIM_CR2_MMS;
-	tim_list[tim]->CR2 |= TIM_CR2_MMS_1;
+	tim->CR2 &= ~TIM_CR2_MMS;
+	tim->CR2 |= TIM_CR2_MMS_1;
 }
 
-static void calc_clk(adc::adc_tim_t tim, uint32_t freq, uint16_t &presc,
-	uint16_t &reload)
+void adc::calc_clk(adc_tim_t tim, uint32_t freq, uint16_t &presc, uint16_t &reload)
 {
-	uint32_t clk_freq = rcc_get_freq(rcc_src_list[tim]);
-	/* If APBx prescaller no equal to 1, TIMx prescaller multiplies by 2 */
+	uint32_t clk_freq = rcc_get_freq(adc_priv::rcc_src[tim]);
+	// If APBx prescaller no equal to 1, TIMx prescaller multiplies by 2
 	if(clk_freq != rcc_get_freq(RCC_SRC_AHB))
 		clk_freq *= 2;
 	
 	uint32_t tmp_presc = 0;
 	uint32_t tmp_reload = clk_freq / freq;
-	if(tmp_reload <= MAX_TIM_RESOL)
+	uint32_t tim_max_resol = std::numeric_limits<uint16_t>::max();
+	if(tmp_reload <= tim_max_resol)
 		tmp_presc = 1;
 	else
 	{
-		tmp_presc = ((tmp_reload + (MAX_TIM_RESOL / 2)) / MAX_TIM_RESOL) + 1;
+		tmp_presc = ((tmp_reload + (tim_max_resol / 2)) / tim_max_resol) + 1;
 		tmp_reload /= tmp_presc;
 	}
 	
-	ASSERT(tmp_presc <= MAX_TIM_RESOL);
-	ASSERT(tmp_reload <= MAX_TIM_RESOL);
+	ASSERT(tmp_presc <= tim_max_resol);
+	ASSERT(tmp_reload <= tim_max_resol);
 	
-	presc = (uint16_t)(tmp_presc - 1);
-	reload = (uint16_t)(tmp_reload - 1);
+	presc = tmp_presc - 1;
+	reload = tmp_reload - 1;
 }

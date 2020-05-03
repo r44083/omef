@@ -11,20 +11,21 @@ gpio::gpio(uint8_t port, uint8_t pin, enum mode mode, bool state):
 	_pin(pin),
 	_mode(mode)
 {
-	ASSERT(_port < ports && gpio_priv::ports[_port]);
+	ASSERT(_port < ports && gpio_priv::gpio[_port]);
 	ASSERT(_pin < pins);
 	
-	RCC->AHBENR |= gpio_priv::rcc[_port];
+	RCC->AHBENR |= gpio_priv::rcc_en[_port];
 	
 	gpio::mode(_mode, state);
 }
 
 gpio::~gpio()
 {
-	GPIO_TypeDef *gpio = gpio_priv::ports[_port];
-	/* No pull-up, no pull-down */
+	GPIO_TypeDef *gpio = gpio_priv::gpio[_port];
+	
+	// No pull-up, no pull-down
 	gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (_pin * 2));
-	/* Analog mode */
+	// Analog mode
 	gpio->MODER |= GPIO_MODER_MODER0 << (_pin * 2);
 }
 
@@ -32,74 +33,71 @@ void gpio::set(bool state) const
 {
 	ASSERT(_mode == mode::DO || _mode == mode::OD);
 	
-	gpio_priv::ports[_port]->BSRR = 1 << (state ? _pin : _pin + 16);
+	gpio_priv::gpio[_port]->BSRR = 1 << (state ? _pin : _pin + 16);
 }
 
 bool gpio::get() const
 {
 	ASSERT(_mode != mode::AN && _mode != mode::AF);
 	
-	return gpio_priv::ports[_port]->IDR & (1 << _pin);
+	return gpio_priv::gpio[_port]->IDR & (1 << _pin);
 }
 
 void gpio::toggle() const
 {
 	ASSERT(_mode == mode::DO || _mode == mode::OD);
 	
-	gpio_priv::ports[_port]->ODR ^= 1 << _pin;
+	gpio_priv::gpio[_port]->ODR ^= 1 << _pin;
 }
 
 void gpio::mode(enum mode mode, bool state)
 {
 	_mode = mode;
-	GPIO_TypeDef *gpio = gpio_priv::ports[_port];
+	GPIO_TypeDef *gpio = gpio_priv::gpio[_port];
 	
-	/* Input mode */
+	// Input
 	gpio->MODER &= ~(GPIO_MODER_MODER0 << (_pin * 2));
-	
-	/* No pull-up, no pull-down */
+	// No pull-up, no pull-down
 	gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (_pin * 2));
-	
-	/* Set very high speed */
+	// Set very high speed
 	gpio->OSPEEDR |= GPIO_OSPEEDR_OSPEEDR0 << (_pin * 2);
 	
 	switch(_mode)
 	{
 		case mode::DO:
-			/* Digital output type */
+			// Digital output
 			gpio->MODER |= GPIO_MODER_MODER0_0 << (_pin * 2);
-			/* Push-pull type */
+			// Push-pull
 			gpio->OTYPER &= ~(GPIO_OTYPER_OT_0 << _pin);
 			break;
 		
 		case mode::OD:
-			/* Digital output type */
+			// Digital output
 			gpio->MODER |= GPIO_MODER_MODER0_0 << (_pin * 2);
-			/* Open drain type */
+			// Open drain
 			gpio->OTYPER |= GPIO_OTYPER_OT_0 << _pin;
 			break;
 		
 		case mode::DI:
-			/* Pull-up or pull-down */
 			if(state)
-				gpio->PUPDR |= GPIO_PUPDR_PUPDR0_0 << (_pin * 2);
+				gpio->PUPDR |= GPIO_PUPDR_PUPDR0_0 << (_pin * 2); // Pull-up
 			else
-				gpio->PUPDR |= GPIO_PUPDR_PUPDR0_1 << (_pin * 2);
+				gpio->PUPDR |= GPIO_PUPDR_PUPDR0_1 << (_pin * 2); // Pull-down
 			break;
 		
 		case mode::AN:
-			/* Analog mode */
+			// Analog mode
 			gpio->MODER |= GPIO_MODER_MODER0 << (_pin * 2);
 			break;
 		
 		case mode::AF:
-			/* Alternate function mode */
+			// Alternate function
 			gpio->MODER |= GPIO_MODER_MODER0_1 << (_pin * 2);
-			/* Modification of AFR register should be done during periph init */
+			// Modification of AFR register should be done during periph init
 			break;
 	}
 	
-	/* Setup default state */
+	// Setup default state
 	if(_mode == mode::DO || _mode == mode::OD)
 		gpio->BSRR =  1 << (state ? _pin : _pin + 16);
 }

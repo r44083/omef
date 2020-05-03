@@ -1,5 +1,4 @@
 #include <stddef.h>
-
 #include "common/assert.h"
 #include "exti.hpp"
 #include "gpio/gpio.hpp"
@@ -8,9 +7,7 @@
 
 using namespace hal;
 
-#define IRQ_PRIORITY 3
-
-static IRQn_Type const irq_list[gpio::pins] =
+constexpr IRQn_Type irqn[gpio::pins] =
 {
 	EXTI0_IRQn, EXTI1_IRQn, EXTI2_IRQn, EXTI3_IRQn, EXTI4_IRQn, EXTI9_5_IRQn,
 	EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI9_5_IRQn, EXTI15_10_IRQn,
@@ -29,22 +26,25 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	ASSERT(_trigger <= TRIGGER_BOTH);
 	ASSERT(_gpio.mode() == gpio::mode::DI);
 	
-	/* Enable clock */
+	// Enable clock
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	
 	uint8_t pin = _gpio.pin();
 	
-	/* Setup EXTI line source */
-	uint8_t exticr_source_offset = (pin % 4) * 4;
-	SYSCFG->EXTICR[pin / 4] &= ~(SYSCFG_EXTICR1_EXTI0 << exticr_source_offset);
-	SYSCFG->EXTICR[pin / 4] |= _gpio.port() << exticr_source_offset;
+	// Setup EXTI line source
+	uint8_t exti_offset = (pin % SYSCFG_EXTICR1_EXTI1_Pos) *
+		SYSCFG_EXTICR1_EXTI1_Pos;
+	SYSCFG->EXTICR[pin / SYSCFG_EXTICR1_EXTI1_Pos] &= ~(SYSCFG_EXTICR1_EXTI0 <<
+		exti_offset);
+	SYSCFG->EXTICR[pin / SYSCFG_EXTICR1_EXTI1_Pos] |= _gpio.port() <<
+		exti_offset;
 	
 	uint32_t line_bit = 1 << pin;
-	/* Setup EXTI mask regs */
+	// Setup EXTI mask regs
 	EXTI->EMR &= ~line_bit;
 	EXTI->IMR &= ~line_bit;
 	
-	/* Setup EXTI trigger */
+	// Setup EXTI trigger
 	EXTI->RTSR |= line_bit;
 	EXTI->FTSR |= line_bit;
 	if(_trigger == TRIGGER_RISING)
@@ -54,21 +54,24 @@ exti::exti(gpio &gpio, trigger_t trigger):
 	
 	obj_list[pin] = this;
 	
-	NVIC_ClearPendingIRQ(irq_list[pin]);
-	NVIC_SetPriority(irq_list[pin], IRQ_PRIORITY);
-	NVIC_EnableIRQ(irq_list[pin]);
+	NVIC_ClearPendingIRQ(irqn[pin]);
+	NVIC_SetPriority(irqn[pin], 2);
+	NVIC_EnableIRQ(irqn[pin]);
 }
 
 exti::~exti()
 {
 	uint8_t pin = _gpio.pin();
 	
-	obj_list[pin] = NULL;
-	
+	NVIC_DisableIRQ(irqn[pin]);
 	EXTI->IMR &= ~(1 << _gpio.pin());
-	_cb = NULL;
-	uint8_t exticr_source_offset = (pin % 4) * 4;
-	SYSCFG->EXTICR[pin / 4] &= ~(SYSCFG_EXTICR1_EXTI0 << exticr_source_offset);
+	
+	uint8_t exti_offset = (pin % SYSCFG_EXTICR1_EXTI1_Pos) *
+		SYSCFG_EXTICR1_EXTI1_Pos;
+	SYSCFG->EXTICR[pin / SYSCFG_EXTICR1_EXTI1_Pos] &= ~(SYSCFG_EXTICR1_EXTI0 <<
+		exti_offset);
+	
+	obj_list[pin] = NULL;
 }
 
 void exti::cb(cb_t cb, void *ctx)
@@ -82,18 +85,15 @@ void exti::on()
 	ASSERT(_cb);
 	
 	uint8_t pin = _gpio.pin();
-	uint32_t line_bit = 1 << pin;
-	/* Clear EXTI line pending bits */
-	EXTI->PR |= line_bit;
-	/* Setup EXTI line configuration */
-	EXTI->IMR |= line_bit;
 	
-	NVIC_ClearPendingIRQ(irq_list[pin]);
+	EXTI->PR |= 1 << pin;
+	EXTI->IMR |= 1 << pin;
+	
+	NVIC_ClearPendingIRQ(irqn[pin]);
 }
 
 void exti::off()
 {
-	/* Clear EXTI line configuration */
 	EXTI->IMR &= ~(1 << _gpio.pin());
 }
 
@@ -114,7 +114,6 @@ void exti::trigger(trigger_t trigger)
 
 extern "C" void exti_irq_hndlr(hal::exti *obj)
 {
-	/* Clear EXTI line pending bits */
 	EXTI->PR = 1 << obj->_gpio.pin();
 	
 	if(obj->_cb)
@@ -123,36 +122,36 @@ extern "C" void exti_irq_hndlr(hal::exti *obj)
 
 extern "C" void EXTI0_IRQHandler(void)
 {
-	exti_irq_hndlr(obj_list[0]);
+	exti_irq_hndlr(obj_list[EXTI_PR_PR0_Pos]);
 }
 
 extern "C" void EXTI1_IRQHandler(void)
 {
-	exti_irq_hndlr(obj_list[1]);
+	exti_irq_hndlr(obj_list[EXTI_PR_PR1_Pos]);
 }
 
 extern "C" void EXTI2_IRQHandler(void)
 {
-	exti_irq_hndlr(obj_list[2]);
+	exti_irq_hndlr(obj_list[EXTI_PR_PR2_Pos]);
 }
 
 extern "C" void EXTI3_IRQHandler(void)
 {
-	exti_irq_hndlr(obj_list[3]);
+	exti_irq_hndlr(obj_list[EXTI_PR_PR3_Pos]);
 }
 
 extern "C" void EXTI4_IRQHandler(void)
 {
-	exti_irq_hndlr(obj_list[4]);
+	exti_irq_hndlr(obj_list[EXTI_PR_PR4_Pos]);
 }
 
 extern "C" void EXTI9_5_IRQHandler(void)
 {
-	uint32_t pending_bit = EXTI->PR;
+	uint32_t pr = EXTI->PR;
 	
-	for(uint8_t i = 5; i <= 9; i++)
+	for(uint8_t i = EXTI_PR_PR5_Pos; i < EXTI_PR_PR10_Pos; i++)
 	{
-		if(pending_bit & (1 << i))
+		if(pr & (1 << i))
 		{
 			exti_irq_hndlr(obj_list[i]);
 			break;
@@ -162,11 +161,11 @@ extern "C" void EXTI9_5_IRQHandler(void)
 
 extern "C" void EXTI15_10_IRQHandler(void)
 {
-	uint32_t pending_bit = EXTI->PR;
+	uint32_t pr = EXTI->PR;
 	
-	for(uint8_t i = 10; i <= 15; i++)
+	for(uint8_t i = EXTI_PR_PR10_Pos; i < EXTI_PR_PR16_Pos; i++)
 	{
-		if(pending_bit & (1 << i))
+		if(pr & (1 << i))
 		{
 			exti_irq_hndlr(obj_list[i]);
 			break;

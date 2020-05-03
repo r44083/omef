@@ -1,10 +1,11 @@
 #pragma once
+
 #include "gpio.hpp"
 #include "CMSIS/Device/STM32F4xx/Include/stm32f4xx.h"
 
 namespace hal::gpio_priv
 {
-constexpr GPIO_TypeDef *const ports[gpio::ports] =
+constexpr GPIO_TypeDef *const gpio[gpio::ports] =
 {
 	GPIOA, GPIOB, GPIOC,
 #if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
@@ -45,7 +46,7 @@ constexpr GPIO_TypeDef *const ports[gpio::ports] =
 #endif
 };
 
-constexpr uint32_t rcc[gpio::ports] =
+constexpr uint32_t rcc_en[gpio::ports] =
 {
 	RCC_AHB1ENR_GPIOAEN, RCC_AHB1ENR_GPIOBEN, RCC_AHB1ENR_GPIOCEN,
 #if defined(STM32F401xC) || defined(STM32F411xE) || defined(STM32F401xE) || \

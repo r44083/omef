@@ -172,11 +172,11 @@ LIBDIR := components/esp8266/lib \
 	components/newlib/newlib/lib \
 	../../../../build/obj/src/hal/ESP8266/ESP8266_RTOS_SDK # Workaround to link libraries from build dir
 
-LIB_TO_BUILD := esp8266 freertos heap log lwip newlib nvs_flash spi_flash \
+LIBS_TO_BUILD := esp8266 freertos heap log lwip newlib nvs_flash spi_flash \
 	tcpip_adapter util wpa_supplicant
 
 LIB := stdc++ c_nano m core_dbg espnow gcc hal net80211 phy pp_dbg smartconfig ssc \
-	wpa wps $(LIB_TO_BUILD)
+	wpa wps $(LIBS_TO_BUILD)
 
 LINKED_OBJ :=
 

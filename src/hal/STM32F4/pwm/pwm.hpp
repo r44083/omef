@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "tim/tim.hpp"
 #include "gpio/gpio.hpp"
 
@@ -43,5 +42,9 @@ class pwm
 		uint8_t _duty;
 		mode_t _mode;
 		gpio &_gpio;
+		static void gpio_af_init(tim::tim_t tim, gpio &gpio);
+		static void calc_freq(tim::tim_t tim, uint32_t freq, uint16_t &presc,
+			uint16_t &reload);
+		static uint16_t calc_ccr(tim::tim_t tim, uint8_t duty);
 };
 }

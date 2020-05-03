@@ -1,9 +1,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "common/assert.h"
 #include "spi.hpp"
+#include "spi_priv.hpp"
 #include "rcc/rcc.hpp"
 #include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F4xx/Include/stm32f4xx.h"
@@ -11,264 +11,7 @@
 
 using namespace hal;
 
-#define IRQ_PRIORITY 3
-
-static SPI_TypeDef *const spi_list[spi::SPI_END] =
-{
-	SPI1,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F410Cx) || defined(STM32F410Rx) || \
-	defined(STM32F411xE) || defined(STM32F412Cx) || defined(STM32F412Rx) || \
-	defined(STM32F412Vx) || defined(STM32F412Zx) || defined(STM32F413xx) || \
-	defined(STM32F415xx) || defined(STM32F417xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	SPI2,
-#else
-	NULL,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	SPI3,
-#else
-	NULL,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	SPI4,
-#else
-	NULL,
-#endif
-#if defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	SPI5,
-#else
-	NULL,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	SPI6
-#else
-	NULL
-#endif
-};
-
-static IRQn_Type const irq_list[spi::SPI_END] =
-{
-	SPI1_IRQn,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F410Cx) || defined(STM32F410Rx) || \
-	defined(STM32F411xE) || defined(STM32F412Cx) || defined(STM32F412Rx) || \
-	defined(STM32F412Vx) || defined(STM32F412Zx) || defined(STM32F413xx) || \
-	defined(STM32F415xx) || defined(STM32F417xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	SPI2_IRQn,
-#else
-	static_cast<IRQn_Type>(0),
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	SPI3_IRQn,
-#else
-	static_cast<IRQn_Type>(0),
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	SPI4_IRQn,
-#else
-	static_cast<IRQn_Type>(0),
-#endif
-#if defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	SPI5_IRQn,
-#else
-	static_cast<IRQn_Type>(0),
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	SPI6_IRQn
-#else
-	static_cast<IRQn_Type>(0)
-#endif
-};
-
-static uint32_t const rcc_list[spi::SPI_END] =
-{
-	RCC_APB2ENR_SPI1EN,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F410Cx) || defined(STM32F410Rx) || \
-	defined(STM32F411xE) || defined(STM32F412Cx) || defined(STM32F412Rx) || \
-	defined(STM32F412Vx) || defined(STM32F412Zx) || defined(STM32F413xx) || \
-	defined(STM32F415xx) || defined(STM32F417xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	RCC_APB1ENR_SPI2EN,
-#else
-	0,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB1ENR_SPI3EN,
-#else
-	0,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	RCC_APB2ENR_SPI4EN,
-#else
-	0,
-#endif
-#if defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB2ENR_SPI5EN,
-#else
-	0,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB2ENR_SPI6EN
-#else
-	0
-#endif
-};
-
-static uint32_t const reset_list[spi::SPI_END] =
-{
-	RCC_APB2RSTR_SPI1RST,
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F410Cx) || defined(STM32F410Rx) || \
-	defined(STM32F411xE) || defined(STM32F412Cx) || defined(STM32F412Rx) || \
-	defined(STM32F412Vx) || defined(STM32F412Zx) || defined(STM32F413xx) || \
-	defined(STM32F415xx) || defined(STM32F417xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	RCC_APB1RSTR_SPI2RST,
-#else
-	0,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F405xx) || \
-	defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F412Cx) || \
-	defined(STM32F412Rx) || defined(STM32F412Vx) || defined(STM32F412Zx) || \
-	defined(STM32F413xx) || defined(STM32F415xx) || defined(STM32F417xx) || \
-	defined(STM32F423xx) || defined(STM32F427xx) || defined(STM32F429xx) || \
-	defined(STM32F437xx) || defined(STM32F439xx) || defined(STM32F446xx) || \
-	defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB1RSTR_SPI3RST,
-#else
-	0,
-#endif
-#if defined(STM32F401xC) || defined(STM32F401xE) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F446xx) || defined(STM32F469xx) || \
-	defined(STM32F479xx)
-	RCC_APB2RSTR_SPI4RST,
-#else
-	0,
-#endif
-#if defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F411xE) || \
-	defined(STM32F412Cx) || defined(STM32F412Rx) || defined(STM32F412Vx) || \
-	defined(STM32F412Zx) || defined(STM32F413xx) || defined(STM32F423xx) || \
-	defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB2RSTR_SPI5RST,
-#else
-	0,
-#endif
-#if defined(STM32F427xx) || defined(STM32F429xx) || defined(STM32F437xx) || \
-	defined(STM32F439xx) || defined(STM32F469xx) || defined(STM32F479xx)
-	RCC_APB2RSTR_SPI6RST
-#else
-	0
-#endif
-};
-
-static volatile uint32_t *rcc_addr_list[spi::SPI_END] =
-{
-	&RCC->APB2ENR,
-	&RCC->APB1ENR,
-	&RCC->APB1ENR,
-	&RCC->APB2ENR,
-	&RCC->APB2ENR,
-	&RCC->APB2ENR
-};
-
-static volatile uint32_t *reset_addr_list[spi::SPI_END] =
-{
-	&RCC->APB2RSTR,
-	&RCC->APB1RSTR,
-	&RCC->APB1RSTR,
-	&RCC->APB2RSTR,
-	&RCC->APB2RSTR,
-	&RCC->APB2RSTR
-};
-
-static rcc_src_t const rcc_src_list[spi::SPI_END] =
-{
-	RCC_SRC_APB2,
-	RCC_SRC_APB1,
-	RCC_SRC_APB1,
-	RCC_SRC_APB2,
-	RCC_SRC_APB2,
-	RCC_SRC_APB2
-};
-
-static uint8_t const gpio_af_list[spi::SPI_END] =
-{
-	0x05,
-	0x05,
-	0x06,
-	0x05,
-	0x05,
-	0x05
-};
-
 static spi *obj_list[spi::SPI_END];
-
-static void gpio_af_init(spi::spi_t spi, gpio &gpio);
-static uint8_t calc_presc(spi::spi_t spi, uint32_t baud);
 
 #if configUSE_TRACE_FACILITY
 static traceHandle isr_dma_tx, isr_dma_rx, isr_spi;
@@ -293,7 +36,7 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	rx_dma(dma_rx),
 	rx_buff(NULL)
 {
-	ASSERT(_spi < SPI_END && spi_list[_spi]);
+	ASSERT(_spi < SPI_END && spi_priv::spi[_spi]);
 	ASSERT(_baud > 0);
 	ASSERT(_cpol <= CPOL_1);
 	ASSERT(_cpha <= CPHA_1);
@@ -316,60 +59,63 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	
 	obj_list[_spi] = this;
 	
-	*rcc_addr_list[_spi] |= rcc_list[_spi];
-	*reset_addr_list[_spi] |= reset_list[_spi];
-	*reset_addr_list[_spi] &= ~reset_list[_spi];
+	*spi_priv::rcc_en_reg[_spi] |= spi_priv::rcc_en[_spi];
+	*spi_priv::rcc_rst_reg[_spi] |= spi_priv::rcc_rst[_spi];
+	*spi_priv::rcc_rst_reg[_spi] &= ~spi_priv::rcc_rst[_spi];
 	
 	gpio_af_init(_spi, _mosi);
 	gpio_af_init(_spi, _miso);
 	gpio_af_init(_spi, _clk);
 	
-	SPI_TypeDef *spi_base = spi_list[_spi];
+	SPI_TypeDef *spi_reg = spi_priv::spi[_spi];
 	
 	// Master mode
-	spi_base->CR1 |= SPI_CR1_MSTR;
+	spi_reg->CR1 |= SPI_CR1_MSTR;
 	
 	if(_cpol == CPOL_0)
-		spi_base->CR1 &= ~SPI_CR1_CPOL;
+		spi_reg->CR1 &= ~SPI_CR1_CPOL;
 	else
-		spi_base->CR1 |= SPI_CR1_CPOL;
+		spi_reg->CR1 |= SPI_CR1_CPOL;
 	
 	if(_cpha == CPHA_0)
-		spi_base->CR1 &= ~SPI_CR1_CPHA;
+		spi_reg->CR1 &= ~SPI_CR1_CPHA;
 	else
-		spi_base->CR1 |= SPI_CR1_CPHA;
+		spi_reg->CR1 |= SPI_CR1_CPHA;
 	
 	if(_bit_order == BIT_ORDER_MSB)
-		spi_base->CR1 &= ~SPI_CR1_LSBFIRST;
+		spi_reg->CR1 &= ~SPI_CR1_LSBFIRST;
 	else
-		spi_base->CR1 |= SPI_CR1_LSBFIRST;
+		spi_reg->CR1 |= SPI_CR1_LSBFIRST;
 	
 	// Disable NSS hardware management
-	spi_base->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI;
+	spi_reg->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI;
 	
 	uint8_t presc = calc_presc(_spi, _baud);
-	spi_base->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR);
+	spi_reg->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR);
 	
-	spi_base->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
+	spi_reg->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
 	
 	// TODO: overrun error has happend each time with this bit
-	//spi_base->CR2 |= SPI_CR2_ERRIE;
+	//spi_reg->CR2 |= SPI_CR2_ERRIE;
 	
-	spi_base->CR1 |= SPI_CR1_SPE;
+	spi_reg->CR1 |= SPI_CR1_SPE;
 	
-	tx_dma.dst((uint8_t *)&spi_base->DR);
-	rx_dma.src((uint8_t *)&spi_base->DR);
+	tx_dma.dst((uint8_t *)&spi_reg->DR);
+	rx_dma.src((uint8_t *)&spi_reg->DR);
 	
-	NVIC_ClearPendingIRQ(irq_list[_spi]);
-	NVIC_SetPriority(irq_list[_spi], IRQ_PRIORITY);
-	NVIC_EnableIRQ(irq_list[_spi]);
+	NVIC_ClearPendingIRQ(spi_priv::irqn[_spi]);
+	NVIC_SetPriority(spi_priv::irqn[_spi], 4);
+	NVIC_EnableIRQ(spi_priv::irqn[_spi]);
 }
 
 spi::~spi()
 {
-	*reset_addr_list[_spi] |= reset_list[_spi];
-	*reset_addr_list[_spi] &= ~reset_list[_spi];
-	*rcc_addr_list[_spi] &= ~rcc_list[_spi];
+	NVIC_DisableIRQ(spi_priv::irqn[_spi]);
+	spi_priv::spi[_spi]->CR1 &= ~SPI_CR1_SPE;
+	*spi_priv::rcc_en_reg[_spi] &= ~spi_priv::rcc_en[_spi];
+	xSemaphoreGive(api_lock);
+	vSemaphoreDelete(api_lock);
+	obj_list[_spi] = NULL;
 }
 
 void spi::baud(uint32_t baud)
@@ -381,7 +127,7 @@ void spi::baud(uint32_t baud)
 	_baud = baud;
 	uint8_t presc = calc_presc(_spi, _baud);
 	
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~(SPI_CR1_SPE | SPI_CR1_BR);
 	spi->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR) | SPI_CR1_SPE;
@@ -396,7 +142,7 @@ void spi::cpol(cpol_t cpol)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_cpol = cpol;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -417,7 +163,7 @@ void spi::cpha(cpha_t cpha)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_cpha = cpha;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -438,7 +184,7 @@ void spi::bit_order(bit_order_t bit_order)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_bit_order = bit_order;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -468,13 +214,12 @@ int8_t spi::write(void *buff, uint16_t size, gpio *cs)
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(size);
 	tx_dma.start_once(on_dma_tx, this);
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
 	
 	xSemaphoreGive(api_lock);
-	
 	return irq_res;
 }
 
@@ -491,13 +236,12 @@ int8_t spi::write(uint8_t byte, gpio *cs)
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(1);
 	tx_dma.start_once(on_dma_tx, this);
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
 	
 	xSemaphoreGive(api_lock);
-	
 	return irq_res;
 }
 
@@ -518,19 +262,18 @@ int8_t spi::read(void *buff, uint16_t size, gpio *cs)
 	rx_dma.start_once(on_dma_rx, this);
 	
 	task = xTaskGetCurrentTaskHandle();
-	/* Setup tx for reception */
+	// Setup tx for reception
 	tx_buff = rx_buff;
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(size);
 	tx_dma.start_once(on_dma_tx, this);
-	spi_list[_spi]->DR;
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+	uint8_t dr = spi_priv::spi[_spi]->DR;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
 	
 	xSemaphoreGive(api_lock);
-	
 	return irq_res;
 }
 
@@ -549,7 +292,7 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	rx_buff = buff_rx;
 	rx_dma.dst((uint8_t*)rx_buff);
 	rx_dma.size(size);
-	spi_list[_spi]->DR;
+	uint8_t dr = spi_priv::spi[_spi]->DR;
 	
 	task = xTaskGetCurrentTaskHandle();
 	tx_buff = buff_tx;
@@ -558,50 +301,41 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	rx_dma.start_once(on_dma_rx, this);
 	tx_dma.start_once(on_dma_tx, this);
 	
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
 	
 	xSemaphoreGive(api_lock);
-	
 	return irq_res;
 }
 
-static void gpio_af_init(spi::spi_t spi, gpio &gpio)
+void spi::gpio_af_init(spi_t spi, gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
-	
+	GPIO_TypeDef *gpio_reg = gpio_priv::gpio[gpio.port()];
 	uint8_t pin = gpio.pin();
-	/* Push-pull type */
+	
+	// Push-pull type
 	gpio_reg->OTYPER &= ~(GPIO_OTYPER_OT_0 << pin);
 	
-	/* Configure alternate function */
-	if(pin < 8)
-	{
-		gpio_reg->AFR[0] &= ~(0x0F << (pin * 4));
-		gpio_reg->AFR[0] |= gpio_af_list[spi] << (pin * 4);
-	}
-	else
-	{
-		gpio_reg->AFR[1] &= ~(0x0F << ((pin - 8) * 4));
-		gpio_reg->AFR[1] |= gpio_af_list[spi] << ((pin - 8) * 4);
-	}
+	// Configure alternate function
+	gpio_reg->AFR[pin / 8] &= ~(GPIO_AFRL_AFSEL0 << ((pin % 8) * 4));
+	gpio_reg->AFR[pin / 8] |= spi_priv::af[spi] << ((pin % 8) * 4);
 }
 
-static uint8_t calc_presc(spi::spi_t spi, uint32_t baud)
+uint8_t spi::calc_presc(spi_t spi, uint32_t baud)
 {
-	uint32_t div = rcc_get_freq(rcc_src_list[spi]) / baud;
+	uint32_t div = rcc_get_freq(spi_priv::rcc_src[spi]) / baud;
 	
-	/* Baud rate is too low or too high */
+	// Baud rate is too low or too high
 	ASSERT(div > 1 && div <= 256);
 	
-	uint8_t res = 0;
-	/* Calculate how many times div can be divided by 2 */
+	uint8_t presc = 0;
+	// Calculate how many times div can be divided by 2
 	while((div /= 2) > 1)
-		res++;
+		presc++;
 	
-	return res;
+	return presc;
 }
 
 void spi::on_dma_tx(dma *dma, dma::event_t event, void *ctx)
@@ -615,7 +349,7 @@ void spi::on_dma_tx(dma *dma, dma::event_t event, void *ctx)
 	BaseType_t hi_task_woken = 0;
 	
 	obj->tx_buff = NULL;
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	
 	spi->CR2 &= ~SPI_CR2_TXDMAEN;
 	if(event == dma::EVENT_CMPLT)
@@ -662,7 +396,7 @@ void spi::on_dma_rx(dma *dma, dma::event_t event, void *ctx)
 	vTraceStoreISRBegin(isr_dma_rx);
 #endif
 	spi *obj = static_cast<spi *>(ctx);
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	
 	obj->rx_buff = NULL;
 	spi->CR2 &= ~SPI_CR2_RXDMAEN;
@@ -687,9 +421,9 @@ void spi::on_dma_rx(dma *dma, dma::event_t event, void *ctx)
 
 extern "C" void spi_irq_hndlr(hal::spi *obj)
 {
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	uint32_t sr = spi->SR;
-	uint32_t dr = spi->DR;
+	uint8_t dr = spi->DR;
 #if configUSE_TRACE_FACILITY
 	vTraceStoreISRBegin(isr_spi);
 #endif
@@ -697,7 +431,7 @@ extern "C" void spi_irq_hndlr(hal::spi *obj)
 	if((spi->CR2 & SPI_CR2_TXEIE) && (sr & SPI_SR_TXE))
 	{
 		spi->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_TXDMAEN);
-		/* Wait for last byte transmission/receiving */
+		// Wait for last byte transmission/receiving
 		while(spi->SR & SPI_SR_BSY);
 		obj->irq_res = spi::RES_OK;
 	}

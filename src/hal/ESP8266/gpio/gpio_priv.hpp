@@ -5,7 +5,9 @@
 #include "ESP8266_RTOS_SDK/components/esp8266/include/esp8266/gpio_register.h"
 #include "ESP8266_RTOS_SDK/components/esp8266/include/esp8266/gpio_struct.h"
 
-namespace hal::gpio_priv
+namespace hal
+{
+namespace gpio_priv
 {
 constexpr auto rtc_pin = 16;
 
@@ -19,14 +21,12 @@ constexpr uint32_t mux[gpio::pins] =
 	PERIPHS_IO_MUX_MTDO_U, PAD_XPD_DCDC_CONF
 };
 
-enum rtc_function_t
-{
-	RTC_FUNC_RTC_XPD_DCDC,
-	RTC_FUNC_RTC_GPIO0,
-	RTC_FUNC_EXT_WAKEUP,
-	RTC_FUNC_DEEPSLEEP,
-	RTC_FUNC_BT_XTAL_EN
-};
+// RTC pin functions definitions
+constexpr auto FUNC_RTC_XPD_DCDC = 0;
+constexpr auto FUNC_RTC_GPIO0 = 1;
+constexpr auto FUNC_EXT_WAKEUP = 2;
+constexpr auto FUNC_DEEPSLEEP = 3;
+constexpr auto FUNC_BT_XTAL_EN = 4;
 
 constexpr uint32_t func[gpio::pins][5] =
 {
@@ -48,5 +48,6 @@ constexpr uint32_t func[gpio::pins][5] =
 	{FUNC_GPIO14,    FUNC_MTMS,         FUNC_I2SI_WS,    FUNC_HSPI_CLK,   FUNC_UART0_DSR},
 	{FUNC_GPIO15,    FUNC_MTDO,         FUNC_I2SO_BCK,   FUNC_HSPI_CS0,   FUNC_U0RTS},
 	{FUNC_RTC_GPIO0, FUNC_RTC_XPD_DCDC, FUNC_EXT_WAKEUP, FUNC_DEEPSLEEP,  FUNC_BT_XTAL_EN}
+};
 };
 };

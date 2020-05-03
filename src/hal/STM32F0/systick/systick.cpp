@@ -1,6 +1,7 @@
 #include "systick.hpp"
 #include "rcc/rcc.hpp"
 #include "CMSIS/Device/STM32F0xx/Include/stm32f0xx.h"
+#include "CMSIS/Include/core_cm0.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -9,7 +10,7 @@ using namespace hal;
 void hal::systick_init(void)
 {
 	uint32_t systick_freq = rcc_get_freq(RCC_SRC_AHB);
-	SysTick_Config(systick_freq / 1000);
+	SysTick_Config(systick_freq / configTICK_RATE_HZ);
 }
 
 uint32_t hal::systick_get_ms(void)

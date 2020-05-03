@@ -1,6 +1,5 @@
 #include <stddef.h>
 #include <string.h>
-
 #include "common/assert.h"
 #include "rtc.hpp"
 #include "systick/systick.hpp"
@@ -8,8 +7,7 @@
 
 using namespace hal;
 
-#define INIT_TIMEOUT 10 /* ms */
-#define IRQ_PRIORITY 7
+constexpr auto init_timeout = 10; // ms
 
 static void *_ctx = NULL;
 static rtc::cb_t _cb = NULL;
@@ -21,14 +19,14 @@ static int8_t enter_init(void);
 
 int8_t rtc::init(clk_t clk)
 {
-	/* Backup domain software force reset */
+	// Backup domain software force reset
 	//RCC->BDCR |= RCC_BDCR_BDRST;
 	//RCC->BDCR &= ~RCC_BDCR_BDRST;
 	
-	/* PWR periphery clock enable */
+	// PWR periphery clock enable
 	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 	
-	/* Disable backup domain write protection */
+	// Disable backup domain write protection
 	PWR->CR |= PWR_CR_DBP;
 	
 	if(clk == CLK_LSI)
@@ -39,15 +37,15 @@ int8_t rtc::init(clk_t clk)
 			return -1;
 	}
 	
-	/* Enable RTC clk */
+	// Enable RTC clk
 	RCC->BDCR |= RCC_BDCR_RTCEN;
 	
-	/* If rtc isn't running yet (if year field is equal to 0) */
+	// If rtc isn't running yet (if year field is equal to 0)
 	if(!(RTC->ISR & RTC_ISR_INITS) && !first_setup())
 		return -1;
 	
 	NVIC_ClearPendingIRQ(RTC_Alarm_IRQn);
-	NVIC_SetPriority(RTC_Alarm_IRQn, IRQ_PRIORITY);
+	NVIC_SetPriority(RTC_Alarm_IRQn, 7);
 	NVIC_EnableIRQ(RTC_Alarm_IRQn);
 	
 	return 0;
@@ -97,7 +95,7 @@ int8_t rtc::set(struct tm &time)
 	time.tm_wday++;
 	time.tm_year %= 100;
 		
-	/* Disable write protection */
+	// Disable write protection
 	RTC->WPR = 0xCA;
 	RTC->WPR = 0x53;
 	
@@ -122,11 +120,11 @@ int8_t rtc::set(struct tm &time)
 	
 	RTC->TR = tmp_time;
 	RTC->DR = tmp_date;
-	/* Exit initialization mode */
+	// Exit initialization mode
 	RTC->ISR &= ~RTC_ISR_INIT;
 	
 Exit:
-	/* Write protection enable */
+	// Write protection enable
 	RTC->WPR = 0xFF;
 	return res;
 }
@@ -146,7 +144,7 @@ bool rtc::is_valid(struct tm &time)
 	return time.tm_sec <= 59 && time.tm_min <= 59 && time.tm_hour <= 23 &&
 		time.tm_mday >= 1 && time.tm_mday <= 31 && time.tm_mon <= 11 &&
 		/* tm_year should be relative to 1900 year.
-		   Suppose it is at least 2000 year now */
+		Suppose it is at least 2000 year now */
 		time.tm_year > 100 &&
 		time.tm_wday <= 6 && time.tm_yday <= 365;
 }
@@ -195,31 +193,31 @@ void rtc::set_alarm(struct tm time)
 
 static int8_t first_setup(void)
 {
-	/* Disable write protection */
+	// Disable write protection
 	RTC->WPR = 0xCA;
 	RTC->WPR = 0x53;
 	
 	if(enter_init())
 		return -1;
 	
-	/* 24 hour selection */
+	// 24 hour selection
 	RTC->CR |= RTC_CR_FMT;
 	
-	/* Bypass the shadow registers enable */
+	// Bypass the shadow registers enable
 	RTC->CR |= RTC_CR_BYPSHAD;
 	
 	/* Prescaler setup for 32768 Hz (1 Hz output):
 	(32768 / PREDIV_ASYNC) / PREDIV_SYNC = 1
-	PREDIV_ASYNC = 128, PREDIV_SYNC = 256*/
+	PREDIV_ASYNC = 128, PREDIV_SYNC = 256 */
 	uint16_t sync_presc = 256 - 1;
 	uint16_t async_presc = 128 - 1;
 	
 	RTC->PRER |= sync_presc | (async_presc << 16);
 	
-	/* Exit from initialization mode */
+	// Exit from initialization mode
 	RTC->ISR &= ~RTC_ISR_INIT;
 	
-	/* Enable write protection */
+	// Enable write protection
 	RTC->WPR = 0xFF;
 	
 	return 0;
@@ -230,7 +228,7 @@ static void config_lsi(void)
 	RCC->CSR |= RCC_CSR_LSION;
 	while(!(RCC->CSR & RCC_CSR_LSIRDY));
 	
-	/* Setup RTC clock source */
+	// Setup RTC clock source
 	RCC->BDCR &= ~RCC_BDCR_RTCSEL_0;
 	RCC->BDCR |= RCC_BDCR_RTCSEL_1;
 }
@@ -243,19 +241,19 @@ static int8_t config_lse(void)
 	{
 		if(RCC->BDCR & RCC_BDCR_LSERDY)
 		{
-			/* Setup RTC clock source */
+			// Setup RTC clock source
 			RCC->BDCR &= ~RCC_BDCR_RTCSEL;
 			RCC->BDCR |= RCC_BDCR_RTCSEL_0;
 			return 0;
 		}
-		else if(systick_get_past(last_tim) >= INIT_TIMEOUT)
+		else if(systick_get_past(last_tim) >= init_timeout)
 			return -1;
 	}
 }
 
 static int8_t enter_init(void)
 {
-	/* Request initialization mode */
+	// Request initialization mode
 	RTC->ISR = 0xFFFFFFFF;
 	uint32_t last_tim = systick_get_ms();
 	while(1)
@@ -263,7 +261,7 @@ static int8_t enter_init(void)
 		if(RTC->ISR & RTC_ISR_INITF)
 			return 0;
 		
-		if(systick_get_past(last_tim) >= INIT_TIMEOUT)
+		if(systick_get_past(last_tim) >= init_timeout)
 			return -1;
 	}
 }

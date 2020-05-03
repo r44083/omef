@@ -3,89 +3,13 @@
 #include <string.h>
 #include "common/assert.h"
 #include "spi.hpp"
+#include "spi_priv.hpp"
 #include "rcc/rcc.hpp"
-#include "../gpio/gpio_priv.hpp"
+#include "gpio/gpio_priv.hpp"
 #include "CMSIS/Device/STM32F0xx/Include/stm32f0xx.h"
 #include "CMSIS/Include/core_cm0.h"
 
 using namespace hal;
-
-#define IRQ_PRIORITY 3
-
-static SPI_TypeDef *const spi_list[spi::SPI_END] =
-{
-	SPI1,
-#if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
-	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	SPI2,
-#else
-	NULL,
-#endif
-};
-
-static IRQn_Type const irq_list[spi::SPI_END] =
-{
-	SPI1_IRQn,
-#if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
-	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	SPI2_IRQn,
-#else
-	static_cast<IRQn_Type>(0),
-#endif
-};
-
-static uint32_t const rcc_list[spi::SPI_END] =
-{
-	RCC_APB2ENR_SPI1EN,
-#if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
-	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	RCC_APB1ENR_SPI2EN,
-#else
-	0,
-#endif
-};
-
-static uint32_t const reset_list[spi::SPI_END] =
-{
-	RCC_APB2RSTR_SPI1RST,
-#if defined(STM32F030x8) || defined(STM32F030xC) || defined(STM32F042x6) || \
-	defined(STM32F048xx) || defined(STM32F051x8) || defined(STM32F058xx) || \
-	defined(STM32F070xB) || defined(STM32F071xB) || defined(STM32F072xB) || \
-	defined(STM32F078xx) || defined(STM32F091xC) || defined(STM32F098xx)
-	RCC_APB1RSTR_SPI2RST,
-#else
-	0,
-#endif
-};
-
-static volatile uint32_t *rcc_addr_list[spi::SPI_END] =
-{
-	&RCC->APB2ENR, &RCC->APB1ENR
-};
-
-static volatile uint32_t *reset_addr_list[spi::SPI_END] =
-{
-	&RCC->APB2RSTR, &RCC->APB1RSTR
-};
-
-static rcc_src_t const rcc_src_list[spi::SPI_END] =
-{
-	RCC_SRC_APB2, RCC_SRC_APB1
-};
-
-/* Get AF index by spi interface and port number:
-af = spi2afr[_spi][gpio.port()] */
-constexpr uint8_t spi2afr[][gpio::ports] =
-{
-	{0, 0, 0, 0, 1},
-	{0, 0, 1, 1}
-};
 
 static spi *obj_list[spi::SPI_END];
 
@@ -112,7 +36,7 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	rx_dma(dma_rx),
 	rx_buff(NULL)
 {
-	ASSERT(_spi < SPI_END && spi_list[_spi]);
+	ASSERT(_spi < SPI_END && spi_priv::spi[_spi]);
 	ASSERT(_baud > 0);
 	ASSERT(_cpol <= CPOL_1);
 	ASSERT(_cpha <= CPHA_1);
@@ -135,67 +59,70 @@ spi::spi(spi_t spi, uint32_t baud, cpol_t cpol, cpha_t cpha,
 	
 	obj_list[_spi] = this;
 	
-	*rcc_addr_list[_spi] |= rcc_list[_spi];
-	*reset_addr_list[_spi] |= reset_list[_spi];
-	*reset_addr_list[_spi] &= ~reset_list[_spi];
+	*spi_priv::rcc_en_reg[_spi] |= spi_priv::rcc_en[_spi];
+	*spi_priv::rcc_rst_reg[_spi] |= spi_priv::rcc_rst[_spi];
+	*spi_priv::rcc_rst_reg[_spi] &= ~spi_priv::rcc_rst[_spi];
 	
-	gpio_af_init(_mosi);
-	gpio_af_init(_miso);
-	gpio_af_init(_clk);
+	gpio_af_init(_spi, _mosi);
+	gpio_af_init(_spi, _miso);
+	gpio_af_init(_spi, _clk);
 	
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
-	remap_dma(tx_dma);
-	remap_dma(rx_dma);
+	remap_dma(_spi, tx_dma);
+	remap_dma(_spi, rx_dma);
 	
-	SPI_TypeDef *spi_base = spi_list[_spi];
+	SPI_TypeDef *spi_reg = spi_priv::spi[_spi];
 	
 	// Master mode
-	spi_base->CR1 |= SPI_CR1_MSTR;
+	spi_reg->CR1 |= SPI_CR1_MSTR;
 	
 	if(_cpol == CPOL_0)
-		spi_base->CR1 &= ~SPI_CR1_CPOL;
+		spi_reg->CR1 &= ~SPI_CR1_CPOL;
 	else
-		spi_base->CR1 |= SPI_CR1_CPOL;
+		spi_reg->CR1 |= SPI_CR1_CPOL;
 	
 	if(_cpha == CPHA_0)
-		spi_base->CR1 &= ~SPI_CR1_CPHA;
+		spi_reg->CR1 &= ~SPI_CR1_CPHA;
 	else
-		spi_base->CR1 |= SPI_CR1_CPHA;
+		spi_reg->CR1 |= SPI_CR1_CPHA;
 	
 	if(_bit_order == BIT_ORDER_MSB)
-		spi_base->CR1 &= ~SPI_CR1_LSBFIRST;
+		spi_reg->CR1 &= ~SPI_CR1_LSBFIRST;
 	else
-		spi_base->CR1 |= SPI_CR1_LSBFIRST;
+		spi_reg->CR1 |= SPI_CR1_LSBFIRST;
 	
 	// Disable NSS hardware management
-	spi_base->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI;
+	spi_reg->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI;
 	
-	uint8_t presc = calc_presc(_baud);
-	spi_base->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR);
+	uint8_t presc = calc_presc(_spi, _baud);
+	spi_reg->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR);
 	
-	spi_base->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
+	spi_reg->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
 	
 	// TODO: overrun error has happend each time with this bit
-	//spi_base->CR2 |= SPI_CR2_ERRIE;
+	//spi_reg->CR2 |= SPI_CR2_ERRIE;
 	
 	// Set FRXTH if data size < 16 bit
-	spi_base->CR2 |= SPI_CR2_FRXTH;
+	spi_reg->CR2 |= SPI_CR2_FRXTH;
 	
-	spi_base->CR1 |= SPI_CR1_SPE;
+	spi_reg->CR1 |= SPI_CR1_SPE;
 	
-	tx_dma.dst((uint8_t *)&spi_base->DR);
-	rx_dma.src((uint8_t *)&spi_base->DR);
+	tx_dma.dst((uint8_t *)&spi_reg->DR);
+	rx_dma.src((uint8_t *)&spi_reg->DR);
 	
-	NVIC_ClearPendingIRQ(irq_list[_spi]);
-	NVIC_SetPriority(irq_list[_spi], IRQ_PRIORITY);
-	NVIC_EnableIRQ(irq_list[_spi]);
+	NVIC_ClearPendingIRQ(spi_priv::irqn[_spi]);
+	NVIC_SetPriority(spi_priv::irqn[_spi], 4);
+	NVIC_EnableIRQ(spi_priv::irqn[_spi]);
 }
 
 spi::~spi()
 {
-	*reset_addr_list[_spi] |= reset_list[_spi];
-	*reset_addr_list[_spi] &= ~reset_list[_spi];
-	*rcc_addr_list[_spi] &= ~rcc_list[_spi];
+	NVIC_DisableIRQ(spi_priv::irqn[_spi]);
+	spi_priv::spi[_spi]->CR1 &= ~SPI_CR1_SPE;
+	*spi_priv::rcc_en_reg[_spi] &= ~spi_priv::rcc_en[_spi];
+	xSemaphoreGive(api_lock);
+	vSemaphoreDelete(api_lock);
+	obj_list[_spi] = NULL;
 }
 
 void spi::baud(uint32_t baud)
@@ -205,9 +132,9 @@ void spi::baud(uint32_t baud)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_baud = baud;
-	uint8_t presc = calc_presc(_baud);
+	uint8_t presc = calc_presc(_spi, _baud);
 	
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~(SPI_CR1_SPE | SPI_CR1_BR);
 	spi->CR1 |= ((presc << SPI_CR1_BR_Pos) & SPI_CR1_BR) | SPI_CR1_SPE;
@@ -222,7 +149,7 @@ void spi::cpol(cpol_t cpol)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_cpol = cpol;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -243,7 +170,7 @@ void spi::cpha(cpha_t cpha)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_cpha = cpha;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -264,7 +191,7 @@ void spi::bit_order(bit_order_t bit_order)
 	xSemaphoreTake(api_lock, portMAX_DELAY);
 	
 	_bit_order = bit_order;
-	SPI_TypeDef *spi = spi_list[_spi];
+	SPI_TypeDef *spi = spi_priv::spi[_spi];
 	
 	spi->CR1 &= ~SPI_CR1_SPE;
 	
@@ -294,7 +221,7 @@ int8_t spi::write(void *buff, uint16_t size, gpio *cs)
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(size);
 	tx_dma.start_once(on_dma_tx, this);
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
@@ -316,7 +243,7 @@ int8_t spi::write(uint8_t byte, gpio *cs)
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(1);
 	tx_dma.start_once(on_dma_tx, this);
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
@@ -342,13 +269,13 @@ int8_t spi::read(void *buff, uint16_t size, gpio *cs)
 	rx_dma.start_once(on_dma_rx, this);
 	
 	task = xTaskGetCurrentTaskHandle();
-	/* Setup tx for reception */
+	// Setup tx for reception
 	tx_buff = rx_buff;
 	tx_dma.src((uint8_t*)tx_buff);
 	tx_dma.size(size);
 	tx_dma.start_once(on_dma_tx, this);
-	volatile uint8_t dr = spi_list[_spi]->DR;
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+	uint8_t dr = spi_priv::spi[_spi]->DR;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
@@ -372,7 +299,7 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	rx_buff = buff_rx;
 	rx_dma.dst((uint8_t*)rx_buff);
 	rx_dma.size(size);
-	spi_list[_spi]->DR;
+	uint8_t dr = spi_priv::spi[_spi]->DR;
 	
 	task = xTaskGetCurrentTaskHandle();
 	tx_buff = buff_tx;
@@ -381,7 +308,7 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	rx_dma.start_once(on_dma_rx, this);
 	tx_dma.start_once(on_dma_tx, this);
 	
-	spi_list[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+	spi_priv::spi[_spi]->CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 	
 	// Task will be unlocked later from isr
 	ulTaskNotifyTake(true, portMAX_DELAY);
@@ -390,53 +317,45 @@ int8_t spi::exch(void *buff_tx, void *buff_rx, uint16_t size, gpio *cs)
 	return irq_res;
 }
 
-void spi::remap_dma(dma &dma)
+void spi::remap_dma(spi_t spi, dma &dma)
 {
+	dma::ch_t ch = dma.get_ch();
+	
 #if defined(STM32F070x6) || defined(STM32F070xB) || defined(STM32F071xB) || \
 	defined(STM32F072xB) || defined(STM32F078xx)
-	switch(dma.get_ch())
-	{
-		case dma::CH_4:
-		case dma::CH_5:
-			if(_spi == spi::SPI_2)
-				SYSCFG->CFGR1 &= ~SYSCFG_CFGR1_SPI2_DMA_RMP;
-			break;
-		
-		case dma::CH_6:
-		case dma::CH_7:
-			if(_spi == spi::SPI_2)
-				SYSCFG->CFGR1 |= SYSCFG_CFGR1_SPI2_DMA_RMP;
-			break;
-		
-		default: break;
-	}
+	if((ch == dma::CH_4 || ch == dma::CH_5) && spi == spi::SPI_2)
+		SYSCFG->CFGR1 &= ~SYSCFG_CFGR1_SPI2_DMA_RMP;
+	else if((ch == dma::CH_6 || ch == dma::CH_7) && spi == spi::SPI_2)
+		SYSCFG->CFGR1 |= SYSCFG_CFGR1_SPI2_DMA_RMP;
 #elif defined(STM32F091xC) || defined(STM32F098xx)
 #error Not implemented. Need to change DMA1_CSELR: "DMAx channel selection registers"
 #endif
 }
 
-void spi::gpio_af_init(gpio &gpio)
+void spi::gpio_af_init(spi_t spi, gpio &gpio)
 {
-	GPIO_TypeDef *gpio_reg = gpio_priv::ports[gpio.port()];
+	GPIO_TypeDef *gpio_reg = gpio_priv::gpio[gpio.port()];
 	uint8_t pin = gpio.pin();
 	
+	// Configure alternate function
 	gpio_reg->AFR[pin / 8] &= ~(GPIO_AFRL_AFSEL0 << ((pin % 8) * 4));
-	gpio_reg->AFR[pin / 8] |= spi2afr[_spi][gpio.port()] << ((pin % 8) * 4);
+	gpio_reg->AFR[pin / 8] |= spi_priv::spi2afr[spi][gpio.port()] <<
+		((pin % 8) * 4);
 }
 
-uint8_t spi::calc_presc(uint32_t baud)
+uint8_t spi::calc_presc(spi_t spi, uint32_t baud)
 {
-	uint32_t div = rcc_get_freq(rcc_src_list[_spi]) / baud;
+	uint32_t div = rcc_get_freq(spi_priv::rcc_src[spi]) / baud;
 	
-	/* Baud rate is too low or too high */
+	// Baud rate is too low or too high
 	ASSERT(div > 1 && div <= 256);
 	
-	uint8_t res = 0;
-	/* Calculate how many times div can be divided by 2 */
+	uint8_t presc = 0;
+	// Calculate how many times div can be divided by 2
 	while((div /= 2) > 1)
-		res++;
+		presc++;
 	
-	return res;
+	return presc;
 }
 
 void spi::on_dma_tx(dma *dma, dma::event_t event, void *ctx)
@@ -450,7 +369,7 @@ void spi::on_dma_tx(dma *dma, dma::event_t event, void *ctx)
 	BaseType_t hi_task_woken = 0;
 	
 	obj->tx_buff = NULL;
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	
 	spi->CR2 &= ~SPI_CR2_TXDMAEN;
 	if(event == dma::EVENT_CMPLT)
@@ -497,7 +416,7 @@ void spi::on_dma_rx(dma *dma, dma::event_t event, void *ctx)
 	vTraceStoreISRBegin(isr_dma_rx);
 #endif
 	spi *obj = static_cast<spi *>(ctx);
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	
 	obj->rx_buff = NULL;
 	spi->CR2 &= ~SPI_CR2_RXDMAEN;
@@ -522,9 +441,9 @@ void spi::on_dma_rx(dma *dma, dma::event_t event, void *ctx)
 
 extern "C" void spi_irq_hndlr(hal::spi *obj)
 {
-	SPI_TypeDef *spi = spi_list[obj->_spi];
+	SPI_TypeDef *spi = spi_priv::spi[obj->_spi];
 	uint32_t sr = spi->SR;
-	volatile uint32_t dr = spi->DR;
+	uint8_t dr = spi->DR;
 #if configUSE_TRACE_FACILITY
 	vTraceStoreISRBegin(isr_spi);
 #endif
@@ -532,7 +451,7 @@ extern "C" void spi_irq_hndlr(hal::spi *obj)
 	if((spi->CR2 & SPI_CR2_TXEIE) && (sr & SPI_SR_TXE))
 	{
 		spi->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_TXDMAEN);
-		/* Wait for last byte transmission/receiving */
+		// Wait for last byte transmission/receiving
 		while(spi->SR & SPI_SR_BSY);
 		obj->irq_res = spi::RES_OK;
 	}

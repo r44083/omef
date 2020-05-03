@@ -68,7 +68,7 @@ class dma
 		
 		typedef void (*cb_t)(dma *dma, event_t event, void *ctx);
 		
-		dma(dma_t dma, stream_t stream, ch_t ch, dir_t dir, inc_size_t inc_size);
+		dma(dma_t dma, stream_t str, ch_t ch, dir_t dir, inc_size_t inc_size);
 		~dma();
 		
 		void src(void *src);
@@ -88,12 +88,12 @@ class dma
 		bool busy();
 		
 		dma_t get_dma() {return _dma;}
-		stream_t get_stream() {return _stream;}
+		stream_t get_stream() {return _str;}
 		ch_t get_ch() {return _ch;}
 		
 	private:
 		dma_t _dma;
-		stream_t _stream;
+		stream_t _str;
 		ch_t _ch;
 		dir_t _dir;
 		inc_size_t _inc_size;

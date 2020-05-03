@@ -1,12 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
-
 #include "common/assert.h"
 #include "adc.hpp"
 
 using namespace hal;
-
-#define V_REF (float)3.3
 
 extern "C" void phy_adc_read_fast(uint16_t *adc_addr, uint16_t adc_num,
 	uint8_t adc_clk_div);

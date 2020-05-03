@@ -13,20 +13,20 @@ class tim
 	public:
 		enum tim_t
 		{
-			TIM_1,  /* Advanced-control timer TIM1 */
-			TIM_2,  /* General-purpose timer TIM2 */
-			TIM_3,  /* General-purpose timer TIM3 */
-			TIM_4,  /* General-purpose timer TIM4 */
-			TIM_5,  /* General-purpose timer TIM5 */
-			TIM_6,  /* Basic timer TIM6 */
-			TIM_7,  /* Basic timer TIM7 */
-			TIM_8,  /* Advanced-control timer TIM8 */
-			TIM_9,  /* General-purpose timer TIM9 */
-			TIM_10, /* General-purpose timer TIM10 */
-			TIM_11, /* General-purpose timer TIM11 */
-			TIM_12, /* General-purpose timer TIM12 */
-			TIM_13, /* General-purpose timer TIM13 */
-			TIM_14, /* General-purpose timer TIM14 */
+			TIM_1,  // Advanced-control timer TIM1
+			TIM_2,  // General-purpose timer TIM2
+			TIM_3,  // General-purpose timer TIM3
+			TIM_4,  // General-purpose timer TIM4
+			TIM_5,  // General-purpose timer TIM5
+			TIM_6,  // Basic timer TIM6
+			TIM_7,  // Basic timer TIM7
+			TIM_8,  // Advanced-control timer TIM8
+			TIM_9,  // General-purpose timer TIM9
+			TIM_10, // General-purpose timer TIM10
+			TIM_11, // General-purpose timer TIM11
+			TIM_12, // General-purpose timer TIM12
+			TIM_13, // General-purpose timer TIM13
+			TIM_14, // General-purpose timer TIM14
 			TIM_END
 		};
 		
@@ -50,6 +50,8 @@ class tim
 		uint32_t _us;
 		void *_ctx;
 		cb_t _cb;
+		static void calc_clk(tim_t tim, uint32_t us, uint16_t &psc,
+			uint16_t &arr);
 		friend void ::tim_irq_hndlr(tim *obj);
 };
 }

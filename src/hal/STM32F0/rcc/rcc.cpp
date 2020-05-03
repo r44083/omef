@@ -1,105 +1,80 @@
 #include <stdint.h>
-
 #include "rcc.hpp"
 #include "CMSIS/Device/STM32F0xx/Include/stm32f0xx.h"
 #include "CMSIS/Device/STM32F0xx/Include/system_stm32f0xx.h"
+#include "CMSIS/Include/core_cm0.h"
 
 extern uint32_t SystemCoreClock;
 
 using namespace hal;
 
-/* Converting CFGR[7:4] HPRE value to prescaller */
-static uint32_t const ahb_presc_list[16] =
+// Converting CFGR[7:4] HPRE value to prescaller
+constexpr uint32_t ahb_presc[16] =
 {
-	0, 0, 0, 0, 0, 0, 0, 0, /* 0-7 AHB prescaller 1 */
-	2,                      /* 8   AHB prescaller 2 */
-	4,                      /* 9   AHB prescaller 4 */
-	8,                      /* 10  AHB prescaller 8 */
-	16,                     /* 11  AHB prescaller 16 */
-	64,                     /* 12  AHB prescaller 64 */
-	128,                    /* 13  AHB prescaller 128 */
-	256,                    /* 14  AHB prescaller 256 */
-	512                     /* 15  AHB prescaller 512 */
+	0, 0, 0, 0, 0, 0, 0, 0, // 0-7 AHB prescaller 1
+	2,                      // 8   AHB prescaller 2
+	4,                      // 9   AHB prescaller 4
+	8,                      // 10  AHB prescaller 8
+	16,                     // 11  AHB prescaller 16
+	64,                     // 12  AHB prescaller 64
+	128,                    // 13  AHB prescaller 128
+	256,                    // 14  AHB prescaller 256
+	512                     // 15  AHB prescaller 512
 };
 
-/* Converting CFGR[12:10] PPRE1 value to prescaller */
-static uint32_t const apb1_presc_list[8] =
+// Converting CFGR[10:8] PPRE value to prescaller
+constexpr uint32_t apb_presc[8] =
 {
-	0, 0, 0, 0, /* APB1 prescaller 1 */
-	2,          /* APB1 prescaller 2 */
-	4,          /* APB1 prescaller 4 */
-	8,          /* APB1 prescaller 8 */
-	16          /* APB1 prescaller 16 */
+	0, 0, 0, 0, // APB prescaller 1
+	2,          // APB prescaller 2
+	4,          // APB prescaller 4
+	8,          // APB prescaller 8
+	16          // APB prescaller 16
 };
 
-/* Converting CFGR[15:13] PPRE2 value to prescaller */
-static uint32_t const apb2_presc_list[8] =
-{
-	0, 0, 0, 0, /* APB2 prescaller 1 */
-	2,          /* APB2 prescaller 2 */
-	4,          /* APB2 prescaller 4 */
-	8,          /* APB2 prescaller 8 */
-	16          /* APB2 prescaller 16 */
-};
-
-static uint32_t rst_reg = 0;
+static uint32_t csr = 0;
 
 bool hal::rcc_init(void)
 {
-	rst_reg = RCC->CSR;
-	/* Clear the reset reason */
+	csr = RCC->CSR;
+	// Clear the reset reason
 	RCC->CSR |= RCC_CSR_RMVF;
 	
-	/* Specific RCC initialization goes here: */
+	// Specific RCC initialization goes here:
 	
 	return true;
 }
 
 uint32_t hal::rcc_get_freq(rcc_src_t src)
 {
-	uint32_t res = 0;
-	uint32_t tmp = 0;
-	uint32_t ahb_presc = 0;
-	uint32_t apb1_presc = 0;
-	uint32_t apb2_presc = 0;
+	uint32_t tmp = (RCC->CFGR & RCC_CFGR_HPRE) >> RCC_CFGR_HPRE_Pos;
+	uint32_t _ahb_presc = ahb_presc[tmp];
 	
-	tmp = (RCC->CFGR & RCC_CFGR_HPRE) >> 4;
-	ahb_presc = ahb_presc_list[tmp];
-	
-	tmp = (RCC->CFGR & RCC_CFGR_PPRE_1) >> 10;
-	apb1_presc = apb1_presc_list[tmp];
-	
-	tmp = (RCC->CFGR & RCC_CFGR_PPRE_2) >> 13;
-	apb2_presc = apb2_presc_list[tmp];
+	tmp = (RCC->CFGR & RCC_CFGR_PPRE) >> RCC_CFGR_PPRE_Pos;
+	uint32_t _apb_presc = apb_presc[tmp];
 	
 	SystemCoreClockUpdate();
-	res = SystemCoreClock;
+	uint32_t freq = SystemCoreClock;
 	switch(src)
 	{
 		case RCC_SRC_SYSCLK:
 			break;
 		
 		case RCC_SRC_AHB:
-			if(ahb_presc > 0)
-				res /= ahb_presc;
+			if(_ahb_presc > 0)
+				freq /= _ahb_presc;
 			break;
 		
 		case RCC_SRC_APB1:
-			if(ahb_presc > 0)
-				res /= ahb_presc;
-			if(apb1_presc > 0)
-				res /= apb1_presc;
-			break;
-		
 		case RCC_SRC_APB2:
-			if(ahb_presc > 0)
-				res /= ahb_presc;
-			if(apb2_presc > 0)
-				res /= apb2_presc;
+			if(_ahb_presc > 0)
+				freq /= _ahb_presc;
+			if(_apb_presc > 0)
+				freq /= _apb_presc;
 			break;
 	}
 	
-	return res;
+	return freq;
 }
 
 void hal::rcc_reset(void)
@@ -109,20 +84,20 @@ void hal::rcc_reset(void)
 
 rcc_rst_reason_t hal::rcc_get_rst_reason(void)
 {
-	if(!rst_reg)
+	if(!csr)
 		rcc_init();
 	
-	if(rst_reg & RCC_CSR_PINRSTF)
+	if(csr & RCC_CSR_PINRSTF)
 		return RCC_RST_REASON_EXTERNAL;
-	else if(rst_reg & RCC_CSR_PORRSTF)
+	else if(csr & RCC_CSR_PORRSTF)
 		return RCC_RST_REASON_LOW_POWER;
-	else if(rst_reg & RCC_CSR_SFTRSTF)
+	else if(csr & RCC_CSR_SFTRSTF)
 		return RCC_RST_REASON_INTERNAL;
-	else if(rst_reg & RCC_CSR_IWDGRSTF)
+	else if(csr & RCC_CSR_IWDGRSTF)
 		return RCC_RST_REASON_WDT;
-	else if(rst_reg & RCC_CSR_WWDGRSTF)
+	else if(csr & RCC_CSR_WWDGRSTF)
 		return RCC_RST_REASON_WDT;
-	else if (rst_reg & RCC_CSR_LPWRRSTF)
+	else if (csr & RCC_CSR_LPWRRSTF)
 		return RCC_RST_REASON_LOW_POWER;
 	return RCC_RST_REASON_UNKNOWN;
 }

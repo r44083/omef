@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "gpio/gpio.hpp"
 #include "dma/dma.hpp"
 #include "FreeRTOS.h"
@@ -70,9 +69,11 @@ class i2c
 		void *rx_buff;
 		uint16_t rx_size;
 		
+		static void gpio_af_init(i2c_t i2c, gpio &gpio);
+		static void calc_clk(i2c_t i2c, uint32_t baud, uint8_t &freq,
+			uint8_t &trise, uint32_t &ccr);
 		static void on_dma_tx(dma *dma, dma::event_t event, void *ctx);
 		static void on_dma_rx(dma *dma, dma::event_t event, void *ctx);
-		
 		friend void ::tx_hndlr(i2c *obj, BaseType_t *hi_task_woken);
 		friend void ::rx_hndlr(i2c *obj, BaseType_t *hi_task_woken);
 		friend void ::err_hndlr(i2c *obj, int8_t err, BaseType_t *hi_task_woken);

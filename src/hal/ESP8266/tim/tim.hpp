@@ -36,6 +36,8 @@ class tim
 		uint32_t _us;
 		void *_ctx;
 		cb_t _cb;
+		static void calc_clk(tim_t tim, uint32_t us, uint8_t &div,
+			uint32_t &load);
 		friend void ::tim_irq_hndlr(tim *obj);
 };
 }

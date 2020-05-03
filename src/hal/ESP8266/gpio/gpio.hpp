@@ -40,9 +40,9 @@ class gpio
 		void set(bool state) const;
 		bool get() const;
 		void toggle() const;
-		void mode(mode mode, bool state = false);
+		void set_mode(mode mode, bool state = false);
 		
-		enum mode mode() const { return _mode; }
+		enum mode get_mode() const { return _mode; }
 		uint8_t port() const { return _port; }
 		uint8_t pin() const { return _pin; }
 	

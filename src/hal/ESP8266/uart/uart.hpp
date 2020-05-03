@@ -61,7 +61,6 @@ class uart
 		uint32_t _baud;
 		stopbit_t _stopbit;
 		parity_t _parity;
-		
 		struct
 		{
 			hal::gpio *gpio;
@@ -69,7 +68,6 @@ class uart
 			size_t remain;
 			int8_t irq_res;
 		} tx;
-		
 		struct
 		{
 			hal::gpio *gpio;
@@ -77,7 +75,6 @@ class uart
 			size_t remain;
 			int8_t irq_res;
 		} rx;
-		
 		SemaphoreHandle_t api_lock;
 		TaskHandle_t task;
 		
