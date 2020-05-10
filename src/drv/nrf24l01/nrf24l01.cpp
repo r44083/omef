@@ -11,13 +11,13 @@ using namespace drv;
 using namespace nrf24l01_priv;
 
 nrf24l01::nrf24l01(hal::spi &spi, hal::gpio &cs, hal::gpio &ce, hal::exti &exti,
-	hal::tim &tim):
+	hal::tim &tim, dev dev):
 	_spi(spi),
 	_cs(cs),
 	_ce(ce),
 	_exti(exti),
 	_tim(tim),
-	conf({})
+	conf({.dev = dev})
 {
 	ASSERT(_spi.cpol() == hal::spi::CPOL_0);
 	ASSERT(_spi.cpha() == hal::spi::CPHA_0);

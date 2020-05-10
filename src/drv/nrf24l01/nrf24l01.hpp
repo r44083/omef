@@ -11,8 +11,6 @@
 
 namespace drv
 {
-#define NRF24L01_PLUS 1 // Support nrf24l01+ (instead of nrf24l01)
-
 class nrf24l01
 {
 	public:
@@ -24,11 +22,13 @@ class nrf24l01
 			RES_NRF_NO_RESPONSE_ERR = -3
 		};
 		
+		enum class dev {NRF24L01, NRF24L01_PLUS};
+		
 		static constexpr auto pipes = 6;
 		static constexpr auto fifo_size = 32;
 		
 		nrf24l01(hal::spi &spi, hal::gpio &cs, hal::gpio &ce, hal::exti &exti,
-			hal::tim &tim);
+			hal::tim &tim, dev dev = dev::NRF24L01_PLUS);
 		~nrf24l01();
 		
 		int8_t init();
@@ -142,10 +142,8 @@ class nrf24l01
 			RX_PW_P4,
 			RX_PW_P5,
 			FIFO_STATUS,
-		#if NRF24L01_PLUS
-			DYNPD = 28,
-			FEATURE = 29
-		#endif
+			DYNPD = 28, // Only for nrf24l01+
+			FEATURE = 29 // Only for nrf24l01+
 		};
 		int8_t read_reg(reg reg, void *data, size_t size = 1);
 		int8_t write_reg(reg reg, void *data, size_t size = 1);
@@ -159,12 +157,10 @@ class nrf24l01
 			FLUSH_TX           = 0xE1,
 			FLUSH_RX           = 0xE2,
 			REUSE_TX_PL        = 0xE3,
-#if NRF24L01_PLUS
-			ACTIVATE           = 0x50,
-			R_RX_PL_WID        = 0x60,
-			W_ACK_PAYLOAD      = 0xA8,
-			W_TX_PAYLOAD_NOACK = 0xB0,
-#endif
+			ACTIVATE           = 0x50, // Only for nrf24l01+
+			R_RX_PL_WID        = 0x60, // Only for nrf24l01+
+			W_ACK_PAYLOAD      = 0xA8, // Only for nrf24l01+
+			W_TX_PAYLOAD_NOACK = 0xB0, // Only for nrf24l01+
 			NOP                = 0xFF
 		};
 		int8_t exec_instruction(instruction instruction);
@@ -190,6 +186,7 @@ class nrf24l01
 		
 		struct
 		{
+			enum dev dev;
 			enum mode mode;
 			struct
 			{

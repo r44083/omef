@@ -84,23 +84,27 @@ struct setup_retr_reg_t
 	ard_t ard:4;
 };
 
-struct rf_setup_reg_t
+
+union rf_setup_reg_t
 {
-#if NRF24L01_PLUS
-	bool obselete:1;
-	rf_pwr_t rf_pwr:2;
-	bool rf_dr_high:1;
-	bool pll_lock:1;
-	bool rf_dr_low:1;
-	bool reserved:1;
-	bool cont_wave:1;
-#else
-	bool lna_hcurr:1;
-	rf_pwr_t rf_pwr:2;
-	bool rf_dr:1;
-	bool pll_lock:1;
-	uint8_t reserved:3;
-#endif
+	struct
+	{
+		bool lna_hcurr:1;
+		rf_pwr_t rf_pwr:2;
+		bool rf_dr:1;
+		bool pll_lock:1;
+		uint8_t reserved:3;
+	} nrf24l01;
+	struct
+	{
+		bool obselete:1;
+		rf_pwr_t rf_pwr:2;
+		bool rf_dr_high:1;
+		bool pll_lock:1;
+		bool rf_dr_low:1;
+		bool reserved:1;
+		bool cont_wave:1;
+	} nrf24l01_plus;
 };
 
 struct status_reg_t
@@ -130,14 +134,12 @@ struct fifo_status_reg_t
 	bool reserved2:1;
 };
 
-#if NRF24L01_PLUS
-struct feature_reg_t
+struct feature_reg_t // Only for nrf24l01+
 {
 	bool en_dyn_ack:1;
 	bool en_ack_pay:1;
 	bool en_dpl:1;
 	uint8_t reserved:5;
 };
-#endif
 #pragma pack(pop)
 };
