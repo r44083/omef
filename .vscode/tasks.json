@@ -3,10 +3,22 @@
     "tasks":
     [
         {
+            "label": "make",
+            "type": "shell",
+            "windows": {"command": "make"},
+            "linux": {"command": "make"},
+            "presentation":
+            {
+                "reveal": "silent",
+                "showReuseMessage": false
+            }
+        },
+        {
             "label": "gdbserver",
             "type": "shell",
             "windows": {"command": "start /min make debug"},
             "linux": {"command": "make debug &"},
+            "dependsOn": ["make"],
             "presentation":
             {
                 "reveal": "silent",
