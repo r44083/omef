@@ -236,7 +236,7 @@ static void config_lsi(void)
 static int8_t config_lse(void)
 {
 	RCC->BDCR |= RCC_BDCR_LSEON;
-	uint32_t last_tim = systick_get_ms();
+	uint32_t last_tim = systick::get_ms();
 	while(1)
 	{
 		if(RCC->BDCR & RCC_BDCR_LSERDY)
@@ -246,7 +246,7 @@ static int8_t config_lse(void)
 			RCC->BDCR |= RCC_BDCR_RTCSEL_0;
 			return 0;
 		}
-		else if(systick_get_past(last_tim) >= init_timeout)
+		else if(systick::get_past(last_tim) >= init_timeout)
 			return -1;
 	}
 }
@@ -255,13 +255,13 @@ static int8_t enter_init(void)
 {
 	// Request initialization mode
 	RTC->ISR = 0xFFFFFFFF;
-	uint32_t last_tim = systick_get_ms();
+	uint32_t last_tim = systick::get_ms();
 	while(1)
 	{
 		if(RTC->ISR & RTC_ISR_INITF)
 			return 0;
 		
-		if(systick_get_past(last_tim) >= init_timeout)
+		if(systick::get_past(last_tim) >= init_timeout)
 			return -1;
 	}
 }
