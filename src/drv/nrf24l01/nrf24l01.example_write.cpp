@@ -31,18 +31,22 @@ static void b1_cb(di *di, bool state, void *ctx)
 	if(!state)
 		return;
 	
-	static gpio green_led(2, 9, gpio::mode::DO, 0);
-	
 	nrf24l01 *nrf = (nrf24l01 *)ctx;
 	int8_t res;
 	ASSERT((res = nrf->init()));
-	ASSERT((res = nrf->tx_addr(0xA5A5)));
+	
+	nrf24l01::conf_t conf;
+	ASSERT(!(res = nrf->get_conf(conf)));
+	conf.tx_addr = 0xA5A5;
+	conf.tx_auto_ack = true;
+	ASSERT(!(res = nrf->set_conf(conf)));
 	
 	char tx_buff[32] = {};
 	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
 	res = nrf->write(tx_buff, sizeof(tx_buff));
 	nrf->power_down();
 	
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	if(res == nrf24l01::RES_OK)
 		green_led.toggle();
 }

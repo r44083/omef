@@ -33,26 +33,35 @@ class nrf24l01
 		
 		int8_t init();
 		
-		/**
-		 * @brief Configure pipe for reception.
-		 * 
-		 * @note Pipe 0 is used in tx setup to receive auto ack. So, don't
-		 * use pipe 0 for reading if any tx api will be used.
-		 * 
-		 * @param pipe Index of pipe.
-		 * @param addr 5-byte rx address.
-		 * @param size Payload size: 1 to 32 bytes.
-		 * @param auto_ack Is auto acknowledgment enabled.
-		 * @return int8_t Error code. @see @ref res_t
-		 */
-		int8_t open_pipe(uint8_t pipe, uint64_t addr, uint8_t size = fifo_size,
-			bool auto_ack = true);
+#pragma pack(push, 1) // Reduce size of conf_t struct
+		struct conf_t
+		{
+			struct
+			{
+				bool enable:1;
+				uint8_t size:6;
+				uint64_t addr:40;
+				bool auto_ack:1;
+				bool dyn_payload:1;
+			} pipe[pipes];
+			uint64_t tx_addr:40;
+			bool tx_auto_ack:1;
+			bool dyn_payload:1;
+		};
+#pragma pack(pop)
+		int8_t get_conf(conf_t &conf);
+		int8_t set_conf(conf_t &conf);
 		
 		struct rx_packet_t
 		{
 			uint8_t pipe;
 			uint8_t buff[fifo_size];
 			size_t size;
+		};
+		struct ack_payload_t
+		{
+			uint8_t buff[fifo_size];
+			uint8_t size;
 		};
 		/**
 		 * @brief Read packet from pipe. @ref open_pipe() should be executed
@@ -61,29 +70,10 @@ class nrf24l01
 		 * @note This method changes nrf24l01 mode from power down to rx.
 		 * 
 		 * @param packet Packet to receive.
-		 * @param tx_ack Ack payload, which will be transmitted after reception.
+		 * @param ack Ack payload, which will be transmitted after reception.
 		 * @return int8_t Error code. @see @ref res_t
 		 */
-		int8_t read(rx_packet_t &packet, uint8_t tx_ack[fifo_size] = NULL);
-		
-		/**
-		 * @brief Close pipe. If it was last opened pipe, power down mode will
-		 * be activated.
-		 * 
-		 * @param pipe Index of pipe.
-		 * @return int8_t Error code. @see @ref res_t
-		 */
-		int8_t close_pipe(uint8_t pipe);
-		
-		/**
-		 * @brief Set tx address and configure rx pipe 0 to receive auto ack.
-		 * 
-		 * @note Pipe 0 will be also reconfigured for auto ack.
-		 * 
-		 * @param addr 5-byte tx address. It is also set to pipe 0 rx address.
-		 * @return int8_t Error code. @see @ref res_t
-		 */
-		int8_t tx_addr(uint64_t addr);
+		int8_t read(rx_packet_t &packet, ack_payload_t *ack = NULL);
 		
 		/**
 		 * @brief Write data buffer.
@@ -93,13 +83,13 @@ class nrf24l01
 		 * @param buff Pointer to data buffer.
 		 * @param size Size of data buffer. It must match the payload size on
 		 * receiving side.
-		 * @param rx_ack Ack payload, which was received after transmitting.
+		 * @param ack Ack payload, which was received after transmitting.
 		 * @param is_continuous_tx Is further continuous transmission planned.
 		 * In case of continuous writing, tx mode will be enabled all the time
 		 * to avoid redundant 130 us (standby-1 mode -> tx mode) delay.
 		 * @return int8_t Error code. @see @ref res_t
 		 */
-		int8_t write(void *buff, size_t size, void *rx_ack = NULL,
+		int8_t write(void *buff, size_t size, ack_payload_t *ack = NULL,
 			bool is_continuous_tx = false);
 		
 		/**
@@ -172,6 +162,9 @@ class nrf24l01
 		enum class mode { PWR_DOWN, STANDBY_1, TX, RX };
 		int8_t set_mode(mode mode);
 		
+		bool is_conf_valid(conf_t &conf);
+		int8_t ack_payload(bool enable);
+		
 		void delay(uint32_t us);
 		
 		static void exti_cb(hal::exti *exti, void *ctx);
@@ -190,9 +183,11 @@ class nrf24l01
 			enum mode mode;
 			struct
 			{
-				bool is_open;
 				uint8_t size;
+				bool dyn_payload;
 			} pipe[pipes];
-		} conf;
+			bool ack_payload;
+			bool dyn_payload;
+		} _conf;
 };
 }

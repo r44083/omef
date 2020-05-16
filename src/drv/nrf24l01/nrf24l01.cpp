@@ -17,7 +17,7 @@ nrf24l01::nrf24l01(hal::spi &spi, hal::gpio &cs, hal::gpio &ce, hal::exti &exti,
 	_ce(ce),
 	_exti(exti),
 	_tim(tim),
-	conf({.dev = dev})
+	_conf({.dev = dev})
 {
 	ASSERT(_spi.cpol() == hal::spi::CPOL_0);
 	ASSERT(_spi.cpha() == hal::spi::CPHA_0);
@@ -51,7 +51,11 @@ int8_t nrf24l01::init()
 	
 	_ce.set(0);
 	vTaskDelay(power_on_reset_timeout);
-	int8_t res;
+	
+	int8_t res = set_mode(mode::PWR_DOWN);
+	if(res)
+		return res;
+	
 	setup_aw_reg_t setup_aw;
 	if((res = read_reg(reg::SETUP_AW, &setup_aw)))
 		return res;
@@ -59,21 +63,176 @@ int8_t nrf24l01::init()
 	if(setup_aw.aw == 0 || setup_aw.reserved != 0)
 		return RES_NRF_NO_RESPONSE_ERR;
 	
+	if(_conf.dev == dev::NRF24L01_PLUS)
+	{
+		feature_reg_t feature;
+		if((res = read_reg(reg::CONFIG, &feature)))
+			return res;
+		_conf.dyn_payload = feature.en_dpl;
+		_conf.ack_payload = feature.en_ack_pay && feature.en_dpl;
+	}
+	
 	config_reg_t config = {.crco = _2_BYTE, .en_crc = 1};
 	if((res = write_reg(reg::CONFIG, &config)))
 		return res;
-	conf.mode = mode::PWR_DOWN;
 	
 	// Disable all rx data pipes, since pipe 0 and 1 are enabled by default
 	uint8_t en_rxaddr = 0;
 	if((res = write_reg(reg::EN_RXADDR, &en_rxaddr)))
 		return res;
-	memset(conf.pipe, 0, sizeof(conf.pipe));
+	memset(_conf.pipe, 0, sizeof(_conf.pipe));
+	
+	if((res = exec_instruction(instruction::FLUSH_TX)))
+		return res;
+	
+	if((res = exec_instruction(instruction::FLUSH_RX)))
+		return res;
 	
 	// Reset IRQ flags
 	status_reg_t status = {.max_rt = 1, .tx_ds = 1, .rx_dr = 1};
 	if((res = write_reg(reg::STATUS, &status)))
 		return res;
+	
+	return res;
+}
+
+int8_t nrf24l01::get_conf(conf_t &conf)
+{
+	freertos::semaphore_take(api_lock, portMAX_DELAY);
+	
+	memset(&conf, 0, sizeof(conf));
+	
+	int8_t res;
+	uint8_t en_rxaddr;
+	if((res = read_reg(reg::EN_RXADDR, &en_rxaddr)))
+		return res;
+	
+	uint8_t en_aa;
+	if((res = read_reg(reg::EN_AA, &en_aa)))
+		return res;
+	
+	uint8_t dynpd;
+	if(_conf.dev == dev::NRF24L01_PLUS)
+	{
+		if((res = read_reg(reg::DYNPD, &dynpd)))
+			return res;
+		
+		feature_reg_t feature;
+		if((res = read_reg(reg::FEATURE, &feature)))
+			return res;
+		conf.dyn_payload = feature.en_dpl;
+	}
+	
+	for(uint8_t i = 0; i < pipes; i++)
+	{
+		conf.pipe[i].enable = en_rxaddr & (1 << i);
+		
+		uint8_t rx_pw = static_cast<uint8_t>(reg::RX_PW_P0) + i;
+		uint8_t rx_pw_val = 0;
+		if((res = read_reg(static_cast<enum reg>(rx_pw), &rx_pw_val)))
+			return res;
+		conf.pipe[i].size = rx_pw_val;
+		_conf.pipe[i].size = rx_pw_val;
+		
+		uint8_t rx_addr = static_cast<uint8_t>(reg::RX_ADDR_P0) + i;
+		uint64_t rx_addr_val = 0;
+		if((res = read_reg(static_cast<enum reg>(rx_addr), &rx_addr_val,
+			i < 2 ? addr_max_size : addr_min_size)))
+		{
+			return res;
+		}
+		conf.pipe[i].addr = rx_addr_val;
+		
+		conf.pipe[i].auto_ack = en_aa & (1 << i);
+		
+		if(_conf.dev == dev::NRF24L01_PLUS)
+		{
+			conf.pipe[i].dyn_payload = dynpd & (1 << i);
+			_conf.pipe[i].dyn_payload = dynpd & (1 << i);
+		}
+	}
+	
+	uint64_t tx_addr_val = 0;
+	if((res = read_reg(reg::TX_ADDR, &tx_addr_val, addr_max_size)))
+		return res;
+	conf.tx_addr = tx_addr_val;
+	
+	conf.tx_auto_ack = (conf.tx_addr == conf.pipe[0].addr &&
+		conf.pipe[0].enable/* && conf.pipe[0].size == fifo_size*/);
+	
+	return res;
+}
+
+int8_t nrf24l01::set_conf(conf_t &conf)
+{
+	ASSERT(is_conf_valid(conf));
+	
+	freertos::semaphore_take(api_lock, portMAX_DELAY);
+	
+	if(conf.tx_auto_ack)
+	{
+		conf.pipe[0].enable = true;
+		conf.pipe[0].size = fifo_size;
+		conf.pipe[0].addr = conf.tx_addr;
+		conf.pipe[0].auto_ack = true;
+		conf.pipe[0].dyn_payload = conf.dyn_payload;
+	}
+	
+	int8_t res;
+	uint8_t en_rxaddr = 0, en_aa = 0, dynpd = 0;
+	for(uint8_t i = 0; i < pipes; i++)
+	{
+		en_rxaddr |= conf.pipe[i].enable << i;
+		en_aa |= conf.pipe[i].auto_ack << i;
+		if(_conf.dev == dev::NRF24L01_PLUS)
+		{
+			dynpd |= conf.pipe[i].dyn_payload << i;
+			_conf.pipe[i].dyn_payload = conf.pipe[i].dyn_payload;
+		}
+		
+		uint8_t rx_pw = static_cast<uint8_t>(reg::RX_PW_P0) + i;
+		uint8_t rx_pw_val = conf.pipe[i].size;
+		if((res = write_reg(static_cast<enum reg>(rx_pw), &rx_pw_val)))
+			return res;
+		_conf.pipe[i].size = conf.pipe[i].size;
+		
+		uint8_t rx_addr = static_cast<uint8_t>(reg::RX_ADDR_P0) + i;
+		uint64_t rx_addr_val = conf.pipe[i].addr;
+		if((res = write_reg(static_cast<enum reg>(rx_addr), &rx_addr_val,
+			i < 2 ? addr_max_size : addr_min_size)))
+		{
+			return res;
+		}
+	}
+	
+	if((res = write_reg(reg::EN_RXADDR, &en_rxaddr)))
+		return res;
+	
+	if((res = write_reg(reg::EN_AA, &en_aa)))
+		return res;
+	
+	uint64_t tx_addr_val = conf.tx_addr;
+	if((res = write_reg(reg::TX_ADDR, &tx_addr_val, addr_max_size)))
+		return res;
+	
+	if(_conf.dev == dev::NRF24L01_PLUS)
+	{
+		if((res = write_reg(reg::DYNPD, &dynpd)))
+			return res;
+		
+		feature_reg_t feature;
+		if((res = read_reg(reg::FEATURE, &feature)))
+			return res;
+		
+		if(feature.en_dpl != conf.dyn_payload)
+		{
+			feature.en_dpl = conf.dyn_payload;
+			if((res = write_reg(reg::FEATURE, &feature)))
+				return res;
+		}
+		_conf.dyn_payload = feature.en_dpl;
+		_conf.ack_payload = feature.en_dpl && feature.en_ack_pay;
+	}
 	
 	if((res = exec_instruction(instruction::FLUSH_TX)))
 		return RES_SPI_ERR;
@@ -81,86 +240,73 @@ int8_t nrf24l01::init()
 	if((res = exec_instruction(instruction::FLUSH_RX)))
 		return RES_SPI_ERR;
 	
+	if(!en_rxaddr && _conf.mode != mode::PWR_DOWN)
+		res = set_mode(mode::PWR_DOWN);
+	
 	return res;
 }
 
-int8_t nrf24l01::open_pipe(uint8_t pipe, uint64_t addr, uint8_t size,
-	bool auto_ack)
+bool nrf24l01::is_conf_valid(conf_t &conf)
 {
-	ASSERT(pipe < pipes);
-	ASSERT(addr <= 0xFFFFFFFFFF);
-	// Only byte 0 can be configured in pipe rx address for pipe number 2-5
-	ASSERT(pipe < 2 || addr <= 0xFF);
-	ASSERT(size > 0 && size <= fifo_size);
+	// Pipe max addr length = 5 bytes
+	if(conf.tx_addr > 0xFFFFFFFFFF)
+		return false;
 	
-	freertos::semaphore_take(api_lock, portMAX_DELAY);
+	if(_conf.dev != dev::NRF24L01_PLUS && conf.dyn_payload)
+		return false;
 	
-	// Set pipe address
-	int8_t res;
-	uint8_t reg = static_cast<uint8_t>(reg::RX_ADDR_P0) + pipe;
-	if((res = write_reg(static_cast<enum reg>(reg), &addr,
-		pipe < 2 ? addr_max_size : addr_min_size)))
+	for(uint8_t i = 0; i < pipes; i++)
 	{
-		return res;
+		if(conf.pipe[i].size > fifo_size)
+			return false;
+		
+		// Pipe max addr length = 5 bytes
+		if(conf.pipe[i].addr > 0xFFFFFFFFFF)
+			return false;
+		
+		// Only byte 0 can be configured in pipe rx address for pipe number 2-5
+		if(i > 1 && conf.pipe[i].addr > 0xFF)
+			return false;
+		
+		if(_conf.dev != dev::NRF24L01_PLUS && conf.pipe[i].dyn_payload)
+			return false;
 	}
-	
-	// Set pipe payload size
-	reg = static_cast<uint8_t>(reg::RX_PW_P0) + pipe;
-	if((res = write_reg(static_cast<enum reg>(reg), &size)))
-		return res;
-	conf.pipe[pipe].size = size;
-	
-	// Set auto acknowledgmentg
-	uint8_t en_aa;
-	if((res = read_reg(reg::EN_AA, &en_aa)))
-		return res;
-	
-	if(auto_ack)
-		en_aa |= 1 << pipe;
-	else
-		en_aa &= ~(1 << pipe);
-	
-	if((res = write_reg(reg::EN_AA, &en_aa)))
-		return RES_SPI_ERR;
-	
-	// Enable data pipe
-	uint8_t en_rxaddr;
-	if((res = read_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	
-	en_rxaddr |= 1 << pipe;
-	if((res = write_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	conf.pipe[pipe].is_open = true;
-	
-	return res;
+	return true;
 }
 
-int8_t nrf24l01::read(rx_packet_t &packet, uint8_t tx_ack[fifo_size])
+int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
 {
+	// If ack payload is provided, ack payload size must be also valid
+	ASSERT(!ack || (ack->size > 0 && ack->size <= fifo_size && _conf.dev ==
+		dev::NRF24L01_PLUS));
+	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
 	// Check FIFO_STATUS first to read the data received earlier is exist
-	fifo_status_reg_t fifo_status;
 	int8_t res;
+	fifo_status_reg_t fifo_status;
 	if((res = read_reg(reg::FIFO_STATUS, &fifo_status)))
 		return res;
 	
 	if(fifo_status.rx_empty)
 	{
-		if(conf.mode != mode::RX)
+		if(_conf.mode != mode::RX)
 		{
 			if((res = set_mode(mode::RX)))
 				return res;
 		}
 		
-		if(tx_ack)
+		if(static_cast<bool>(ack) != _conf.ack_payload)
+		{
+			if((res = ack_payload(static_cast<bool>(ack))))
+				return res;
+		}
+		if(ack)
 		{
 			// Write ack payload to be transmitted after reception
-			if((res = exec_instruction_with_write(instruction::W_TX_PAYLOAD,
-				tx_ack, fifo_size)))
+			if((res = exec_instruction_with_write(instruction::W_ACK_PAYLOAD,
+				ack->buff, ack->size)))
 			{
-				_ce.set(0);
 				return res;
 			}
 		}
@@ -175,103 +321,57 @@ int8_t nrf24l01::read(rx_packet_t &packet, uint8_t tx_ack[fifo_size])
 	
 	// Read received data
 	status_reg_t status;
-	res = read_reg(reg::STATUS, &status);
-	int8_t res2 = exec_instruction_with_read(instruction::R_RX_PAYLOAD,
-		packet.buff, fifo_size);
-	/* Remember new error code if it isn't OK, since we can't return it now
-	(need to reset IRQ by writing updated spi status register) */
-	res = res ? res : res2;
+	if((res = read_reg(reg::STATUS, &status)))
+		goto exit;
 	
+	// TODO: is it needed to check status.rx_p_no for valid range?
+	if(_conf.pipe[status.rx_p_no].dyn_payload)
+	{
+		if((res = exec_instruction_with_read(instruction::R_RX_PL_WID,
+			&packet.size, sizeof(uint8_t))))
+		{
+			goto exit;
+		}
+	}
+	else
+		packet.size = _conf.pipe[status.rx_p_no].size;
+	
+	res = exec_instruction_with_read(instruction::R_RX_PAYLOAD, packet.buff,
+		packet.size);
+	packet.pipe = status.rx_p_no;
+	
+exit:
 	status.rx_dr = 1;
 	status.tx_ds = 1;
 	status.max_rt = 1;
-	res2 = write_reg(reg::STATUS, &status);
-	
-	packet.pipe = status.rx_p_no;
-	packet.size = conf.pipe[packet.pipe].size;
-	
-	return res ? res : res2;
+	int8_t res_final = write_reg(reg::STATUS, &status);
+	return res ? res : res_final;
 }
 
-int8_t nrf24l01::close_pipe(uint8_t pipe)
-{
-	ASSERT(pipe < pipes);
-	
-	freertos::semaphore_take(api_lock, portMAX_DELAY);
-	
-	// Disable data pipe
-	uint8_t en_rxaddr;
-	int8_t res;
-	if((res = read_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	
-	en_rxaddr &= ~(1 << pipe);
-	if((res = write_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	conf.pipe[pipe].is_open = false;
-	
-	bool is_any_pipe_open = false;
-	for(uint8_t i = 0; i < pipes; i++)
-	{
-		if(conf.pipe[i].is_open)
-		{
-			is_any_pipe_open = true;
-			break;
-		}
-	}
-	if(!is_any_pipe_open)
-		res = set_mode(mode::PWR_DOWN);
-	
-	return res;
-}
-
-int8_t nrf24l01::tx_addr(uint64_t addr)
-{
-	ASSERT(addr <= 0xFFFFFFFFFF);
-	
-	freertos::semaphore_take(api_lock, portMAX_DELAY);
-	
-	// Set tx address
-	int8_t res;
-	if((res = write_reg(reg::TX_ADDR, &addr, addr_max_size)))
-		return res;
-	
-	/* Set RX_ADDR_P0 equal to TX_ADDR address to handle automatic acknowledge
-	   if this is a PTX device with Enhanced ShockBurst enabled. See page 14.
-	*/
-	if((res = write_reg(reg::RX_ADDR_P0, &addr, addr_max_size)))
-		return res;
-	
-	// Enable rx data pipe0 for automatic acknowledge
-	uint8_t en_rxaddr;
-	if((res = read_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	
-	en_rxaddr |= 1;
-	if((res = write_reg(reg::EN_RXADDR, &en_rxaddr)))
-		return res;
-	conf.pipe[0].size = fifo_size;
-	conf.pipe[0].is_open = true;
-	
-	if((res = exec_instruction(instruction::FLUSH_TX)))
-		return res;
-	
-	return res;
-}
-
-int8_t nrf24l01::write(void *buff, size_t size, void *ack_payload,
+int8_t nrf24l01::write(void *buff, size_t size, ack_payload_t *ack,
 	bool is_continuous_tx)
 {
 	ASSERT(buff);
 	ASSERT(size > 0 && size <= fifo_size);
+	// Ack payload supported only for nrf24l01+
+	ASSERT(!ack || (_conf.dev == dev::NRF24L01_PLUS));
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
 	int8_t res;
 	
-	if(conf.mode != mode::TX)
+	if(_conf.mode != mode::TX)
 	{
 		if((res = set_mode(mode::TX)))
+		{
+			_ce.set(0);
+			return res;
+		}
+	}
+	
+	if(static_cast<bool>(ack) != _conf.ack_payload)
+	{
+		if((res = ack_payload(static_cast<bool>(ack))))
 		{
 			_ce.set(0);
 			return res;
@@ -300,7 +400,8 @@ int8_t nrf24l01::write(void *buff, size_t size, void *ack_payload,
 	// TODO: Calculate presize timeout based on values of arc and ard
 	if(!ulTaskNotifyTake(true, transmit_max_timeout))
 	{
-		_ce.set(0);
+		if(is_continuous_tx)
+			_ce.set(0);
 		_exti.off();
 		return RES_NRF_NO_RESPONSE_ERR;
 	}
@@ -308,7 +409,11 @@ int8_t nrf24l01::write(void *buff, size_t size, void *ack_payload,
 	
 	status_reg_t status;
 	if((res = read_reg(reg::STATUS, &status)))
-		_ce.set(0);
+	{
+		if(is_continuous_tx)
+			_ce.set(0);
+		memset(&status, 0, sizeof(status));
+	}
 	
 	int8_t txrx_res = RES_OK;
 	if(status.max_rt)
@@ -319,10 +424,19 @@ int8_t nrf24l01::write(void *buff, size_t size, void *ack_payload,
 	}
 	else if(status.rx_dr) // Payload was received
 	{
-		if(ack_payload)
+		if(ack)
 		{
-			txrx_res = exec_instruction_with_read(instruction::R_RX_PAYLOAD,
-				ack_payload, size);
+			// Get ack payload length and read it
+			txrx_res = exec_instruction_with_read(instruction::R_RX_PL_WID,
+				&ack->size, sizeof(ack->size));
+			
+			if(!txrx_res)
+			{
+				txrx_res = exec_instruction_with_read(instruction::R_RX_PAYLOAD,
+					ack->buff, ack->size);
+			}
+			else
+				exec_instruction(instruction::FLUSH_RX);
 		}
 		else
 			exec_instruction(instruction::FLUSH_RX);
@@ -442,7 +556,7 @@ int8_t nrf24l01::set_mode(mode mode)
 		
 		case mode::STANDBY_1:
 			_ce.set(0);
-			if(conf.mode == mode::PWR_DOWN)
+			if(_conf.mode == mode::PWR_DOWN)
 			{
 				if((res = read_reg(reg::CONFIG, &config)))
 					return res;
@@ -497,8 +611,50 @@ int8_t nrf24l01::set_mode(mode mode)
 	if(us_wait)
 		delay(us_wait);
 	
-	conf.mode = mode;
+	_conf.mode = mode;
 	return RES_OK;
+}
+
+int8_t nrf24l01::ack_payload(bool enable)
+{
+	int8_t res;
+	feature_reg_t feature;
+	if((res = read_reg(reg::FEATURE, &feature)))
+		return res;
+	
+	if((feature.en_dpl != enable) || (feature.en_ack_pay != enable))
+	{
+		/* Do not turn-off dynamic payload size if it was explicitly enabled by
+		user */
+		feature.en_dpl = enable || _conf.dyn_payload;
+		
+		feature.en_ack_pay = enable;
+		
+		if((res = write_reg(reg::FEATURE, &feature)))
+			return res;
+	}
+	_conf.ack_payload = enable;
+	
+	// Setup dynamic payload for pipe0 which is used for tx
+	if(_conf.mode == mode::TX)
+	{
+		uint8_t dynpd;
+		if((res = read_reg(reg::DYNPD, &dynpd)))
+			return res;
+
+		if(enable != (dynpd & 1))
+		{
+			if(enable)
+				dynpd |= 1;
+			else
+				dynpd &= ~1;
+			
+			if((res = write_reg(reg::DYNPD, &dynpd)))
+				return res;
+		}
+	}
+	
+	return res;
 }
 
 void nrf24l01::delay(uint32_t us)

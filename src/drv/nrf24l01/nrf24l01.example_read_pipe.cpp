@@ -21,7 +21,14 @@ static void nrf_task(void *pvParameters)
 	
 	int8_t res;
 	ASSERT((res = nrf->init()));
-	ASSERT((res = nrf->open_pipe(1, 0xA5A5)));
+	
+	nrf24l01::conf_t conf;
+	ASSERT(!(res = nrf->get_conf(conf)));
+	conf.pipe[1].enable = true;
+	conf.pipe[1].addr = 0xA5A5;
+	conf.pipe[1].auto_ack = true;
+	conf.pipe[1].size = nrf24l01::fifo_size;
+	ASSERT(!(res = nrf->set_conf(conf)));
 	
 	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	while(1)
@@ -36,8 +43,10 @@ static void nrf_task(void *pvParameters)
 		
 		memset(&packet, 0, sizeof(packet));
 	}
-	//res = nrf->close_pipe(1);
-	//vTaskDelete(NULL);
+	ASSERT(!(res = nrf->get_conf(conf)));
+	conf.pipe[1].enable = false;
+	ASSERT(!(res = nrf->set_conf(conf)));
+	vTaskDelete(NULL);
 }
 
 int main(void)
