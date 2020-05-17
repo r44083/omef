@@ -276,9 +276,10 @@ bool nrf24l01::is_conf_valid(conf_t &conf)
 
 int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
 {
-	// If ack payload is provided, ack payload size must be also valid
-	ASSERT(!ack || (ack->size > 0 && ack->size <= fifo_size && _conf.dev ==
-		dev::NRF24L01_PLUS));
+	/* If ack payload is provided, dynamic payload size should be configured and
+	ack payload size must be also valid */
+	ASSERT(!ack || (_conf.dyn_payload && _conf.dev == dev::NRF24L01_PLUS &&
+		ack->size > 0 && ack->size <= fifo_size));
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
@@ -328,7 +329,7 @@ int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
 	if(_conf.pipe[status.rx_p_no].dyn_payload)
 	{
 		if((res = exec_instruction_with_read(instruction::R_RX_PL_WID,
-			&packet.size, sizeof(uint8_t))))
+			&packet.size, sizeof(packet.size))))
 		{
 			goto exit;
 		}
@@ -354,7 +355,7 @@ int8_t nrf24l01::write(void *buff, size_t size, ack_payload_t *ack,
 	ASSERT(buff);
 	ASSERT(size > 0 && size <= fifo_size);
 	// Ack payload supported only for nrf24l01+
-	ASSERT(!ack || (_conf.dev == dev::NRF24L01_PLUS));
+	ASSERT(!ack || (_conf.dyn_payload && _conf.dev == dev::NRF24L01_PLUS));
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	

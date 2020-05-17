@@ -56,7 +56,7 @@ class nrf24l01
 		{
 			uint8_t pipe;
 			uint8_t buff[fifo_size];
-			size_t size;
+			uint8_t size;
 		};
 		struct ack_payload_t
 		{
