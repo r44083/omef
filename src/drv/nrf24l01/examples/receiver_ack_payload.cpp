@@ -86,7 +86,7 @@ int main(void)
 	static nrf24l01 nrf(nrf24l01_spi, nrf24l01_csn, nrf24l01_ce, nrf24l01_exti,
 		tim6);
 	
-	xTaskCreate(nrf_task, "nrf", configMINIMAL_STACK_SIZE, &nrf, 1, NULL);
+	xTaskCreate(nrf_task, "nrf", configMINIMAL_STACK_SIZE + 20, &nrf, 1, NULL);
 	
 	vTaskStartScheduler();
 }

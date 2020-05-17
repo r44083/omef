@@ -32,16 +32,21 @@ static void b1_cb(di *di, bool state, void *ctx)
 		return;
 	
 	nrf24l01 *nrf = (nrf24l01 *)ctx;
-	int8_t res;
-	ASSERT((res = nrf->init()));
+	
+	int8_t res = nrf->init();
+	ASSERT(res == nrf24l01::RES_OK);
 	
 	nrf24l01::conf_t conf;
-	ASSERT(!(res = nrf->get_conf(conf)));
+	res = nrf->get_conf(conf);
+	ASSERT(res == nrf24l01::RES_OK);
+	
 	conf.tx_addr = 0xA5A5;
 	conf.tx_auto_ack = true;
-	ASSERT(!(res = nrf->set_conf(conf)));
 	
-	char tx_buff[sizeof("Hello!")] = {};
+	res = nrf->set_conf(conf);
+	ASSERT(res == nrf24l01::RES_OK);
+	
+	char tx_buff[nrf24l01::fifo_size] = {};
 	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
 	res = nrf->write(tx_buff, sizeof(tx_buff));
 	nrf->power_down();
@@ -67,7 +72,7 @@ int main(void)
 	static dma spi1_rx_dma(dma::DMA_1, dma::CH_2, dma::DIR_PERIPH_TO_MEM,
 		dma::INC_SIZE_8);
 	
-	static spi nrf24l01_spi(spi::SPI_1, 4000000, spi::CPOL_0, spi::CPHA_0,
+	static spi nrf24l01_spi(spi::SPI_1, 1000000, spi::CPOL_0, spi::CPHA_0,
 		spi::BIT_ORDER_MSB, spi1_tx_dma, spi1_rx_dma, spi1_mosi_gpio,
 		spi1_miso_gpio, spi1_clk_gpio);
 	
@@ -80,7 +85,7 @@ int main(void)
 	static di b1_di(b1, 50, 0);
 	b1_di.cb(b1_cb, &nrf);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 20, &b1_di, 1, NULL);
 	
 	vTaskStartScheduler();
 }
