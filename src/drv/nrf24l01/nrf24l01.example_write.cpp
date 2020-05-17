@@ -41,7 +41,7 @@ static void b1_cb(di *di, bool state, void *ctx)
 	conf.tx_auto_ack = true;
 	ASSERT(!(res = nrf->set_conf(conf)));
 	
-	char tx_buff[32] = {};
+	char tx_buff[sizeof("Hello!")] = {};
 	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
 	res = nrf->write(tx_buff, sizeof(tx_buff));
 	nrf->power_down();

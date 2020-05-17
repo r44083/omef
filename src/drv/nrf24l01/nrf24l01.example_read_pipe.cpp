@@ -33,7 +33,7 @@ static void nrf_task(void *pvParameters)
 	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	while(1)
 	{
-		nrf24l01::rx_packet_t packet;
+		nrf24l01::packet_t packet;
 		res = nrf->read(packet);
 		if(res == nrf24l01::RES_OK && !strncmp((const char *)packet.buff,
 			"Hello!", sizeof("Hello!") - 1))

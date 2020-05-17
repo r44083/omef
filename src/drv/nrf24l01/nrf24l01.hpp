@@ -33,63 +33,73 @@ class nrf24l01
 		
 		int8_t init();
 		
-#pragma pack(push, 1) // Reduce size of conf_t struct
+#pragma pack(push, 1)
 		struct conf_t
 		{
+			/* Configuration struct for rx pipes. NOTE: pipe 0 is used in tx
+			setup to receive auto ack. So, don't use pipe 0 for reading if tx
+			functionality will be used */
 			struct
 			{
+				// Enable rx pipe
 				bool enable:1;
+				// Size of pipe payload. Could be ignored if dyn_payload=true
 				uint8_t size:6;
+				/* Pipe address. Pipes 0,1 have 5-byte address, 2-5 have 1-byte
+				address (LSByte) */
 				uint64_t addr:40;
+				// Auto acknowledgement for received packets for specific pipe
 				bool auto_ack:1;
+				// Dynamic payload size. Also requires auto_ack enabled
 				bool dyn_payload:1;
 			} pipe[pipes];
+			/* 5-byte tx address. If auto ack is enabled, pipe 0 should has the
+			same address */
 			uint64_t tx_addr:40;
+			/* Auto acknowledgement for transmitted packets.
+			NOTE: Pipe 0 will be also configured for auto ack */
 			bool tx_auto_ack:1;
+			/* Dynamic payload size feature. Should be enabled for tx or rx
+			dynamic payload size support */
 			bool dyn_payload:1;
 		};
 #pragma pack(pop)
 		int8_t get_conf(conf_t &conf);
 		int8_t set_conf(conf_t &conf);
 		
-		struct rx_packet_t
+		struct packet_t
 		{
 			uint8_t pipe;
 			uint8_t buff[fifo_size];
 			uint8_t size;
 		};
-		struct ack_payload_t
-		{
-			uint8_t buff[fifo_size];
-			uint8_t size;
-		};
 		/**
-		 * @brief Read packet from pipe. @ref open_pipe() should be executed
-		 * before to initialize pipe.
-		 * 
-		 * @note This method changes nrf24l01 mode from power down to rx.
+		 * @brief Read packet.
+		 * @note This method changes nrf24l01 mode from power-down to rx.
 		 * 
 		 * @param packet Packet to receive.
-		 * @param ack Ack payload, which will be transmitted after reception.
+		 * @param ack Ack payload to be transmitted after reception. Don't
+		 * forget to specify ack size (ack->size) and pipe index (ack->pipe) for
+		 * which this ack will be transmitted. dyn_payload should be also
+		 * enabled for specific pipes.
 		 * @return int8_t Error code. @see @ref res_t
 		 */
-		int8_t read(rx_packet_t &packet, ack_payload_t *ack = NULL);
+		int8_t read(packet_t &packet, packet_t *ack = NULL);
 		
 		/**
 		 * @brief Write data buffer.
-		 * 
-		 * @note This method changes nrf24l01 mode from power down to tx.
+		 * @note This method changes nrf24l01 mode from power-down to tx.
 		 * 
 		 * @param buff Pointer to data buffer.
 		 * @param size Size of data buffer. It must match the payload size on
-		 * receiving side.
-		 * @param ack Ack payload, which was received after transmitting.
+		 * receiving side or use dynamic payload size.
+		 * @param ack Ack payload to be received after transmission.
 		 * @param is_continuous_tx Is further continuous transmission planned.
 		 * In case of continuous writing, tx mode will be enabled all the time
 		 * to avoid redundant 130 us (standby-1 mode -> tx mode) delay.
 		 * @return int8_t Error code. @see @ref res_t
 		 */
-		int8_t write(void *buff, size_t size, ack_payload_t *ack = NULL,
+		int8_t write(void *buff, size_t size, packet_t *ack = NULL,
 			bool is_continuous_tx = false);
 		
 		/**

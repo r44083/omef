@@ -165,7 +165,7 @@ int8_t nrf24l01::get_conf(conf_t &conf)
 
 int8_t nrf24l01::set_conf(conf_t &conf)
 {
-	ASSERT(is_conf_valid(conf));
+	is_conf_valid(conf);
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
@@ -248,38 +248,52 @@ int8_t nrf24l01::set_conf(conf_t &conf)
 
 bool nrf24l01::is_conf_valid(conf_t &conf)
 {
-	// Pipe max addr length = 5 bytes
-	if(conf.tx_addr > 0xFFFFFFFFFF)
-		return false;
-	
 	if(_conf.dev != dev::NRF24L01_PLUS && conf.dyn_payload)
+	{
+		// Dynamic payload size available only for nrf24l01+
+		ASSERT(0);
 		return false;
+	}
 	
 	for(uint8_t i = 0; i < pipes; i++)
 	{
 		if(conf.pipe[i].size > fifo_size)
+		{
+			ASSERT(0);
 			return false;
+		}
 		
-		// Pipe max addr length = 5 bytes
-		if(conf.pipe[i].addr > 0xFFFFFFFFFF)
-			return false;
-		
-		// Only byte 0 can be configured in pipe rx address for pipe number 2-5
 		if(i > 1 && conf.pipe[i].addr > 0xFF)
+		{
+			/* Only byte 0 can be configured in pipe rx address for pipe number
+			2-5 */
+			ASSERT(0);
 			return false;
+		}
 		
 		if(_conf.dev != dev::NRF24L01_PLUS && conf.pipe[i].dyn_payload)
+		{
+			// Dynamic payload size available only for nrf24l01+
+			ASSERT(0);
 			return false;
+		}
+		
+		if(conf.pipe[i].dyn_payload && !conf.pipe[i].auto_ack)
+		{
+			// Auto ack is requrements for dynamic payload
+			ASSERT(0);
+			return false;
+		}
 	}
 	return true;
 }
 
-int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
+int8_t nrf24l01::read(packet_t &packet, packet_t *ack)
 {
 	/* If ack payload is provided, dynamic payload size should be configured and
 	ack payload size must be also valid */
-	ASSERT(!ack || (_conf.dyn_payload && _conf.dev == dev::NRF24L01_PLUS &&
-		ack->size > 0 && ack->size <= fifo_size));
+	ASSERT(!ack || (_conf.dyn_payload && ack->size > 0 &&
+		ack->size <= fifo_size && ack->pipe < pipes));
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
@@ -305,7 +319,10 @@ int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
 		if(ack)
 		{
 			// Write ack payload to be transmitted after reception
-			if((res = exec_instruction_with_write(instruction::W_ACK_PAYLOAD,
+			uint8_t w_ack_payload_with_pipe =
+				static_cast<uint8_t>(instruction::W_ACK_PAYLOAD) | ack->pipe;
+			if((res = exec_instruction_with_write(
+				static_cast<instruction>(w_ack_payload_with_pipe),
 				ack->buff, ack->size)))
 			{
 				return res;
@@ -325,12 +342,28 @@ int8_t nrf24l01::read(rx_packet_t &packet, ack_payload_t *ack)
 	if((res = read_reg(reg::STATUS, &status)))
 		goto exit;
 	
-	// TODO: is it needed to check status.rx_p_no for valid range?
+	if(ack && status.max_rt) // Payload ack wasn't transmitted
+	{
+		res = RES_TX_MAX_RETRIES_ERR;
+		goto exit;
+	}
+	
+	if(status.rx_p_no > pipes - 1)
+	{
+		res = RES_SPI_ERR;
+		goto exit;
+	}
+	
 	if(_conf.pipe[status.rx_p_no].dyn_payload)
 	{
 		if((res = exec_instruction_with_read(instruction::R_RX_PL_WID,
 			&packet.size, sizeof(packet.size))))
 		{
+			goto exit;
+		}
+		if(!packet.size || packet.size > fifo_size)
+		{
+			res = RES_SPI_ERR;
 			goto exit;
 		}
 	}
@@ -349,13 +382,14 @@ exit:
 	return res ? res : res_final;
 }
 
-int8_t nrf24l01::write(void *buff, size_t size, ack_payload_t *ack,
+int8_t nrf24l01::write(void *buff, size_t size, packet_t *ack,
 	bool is_continuous_tx)
 {
 	ASSERT(buff);
 	ASSERT(size > 0 && size <= fifo_size);
+	ASSERT(size == fifo_size || _conf.dyn_payload);
 	// Ack payload supported only for nrf24l01+
-	ASSERT(!ack || (_conf.dyn_payload && _conf.dev == dev::NRF24L01_PLUS));
+	ASSERT(!ack || _conf.dyn_payload);
 	
 	freertos::semaphore_take(api_lock, portMAX_DELAY);
 	
@@ -398,7 +432,7 @@ int8_t nrf24l01::write(void *buff, size_t size, ack_payload_t *ack,
 		_ce.set(0);
 	}
 	
-	// TODO: Calculate presize timeout based on values of arc and ard
+	// TODO: Calculate presize timeout based on values of arc, ard and datarate
 	if(!ulTaskNotifyTake(true, transmit_max_timeout))
 	{
 		if(is_continuous_tx)
@@ -431,6 +465,10 @@ int8_t nrf24l01::write(void *buff, size_t size, ack_payload_t *ack,
 			txrx_res = exec_instruction_with_read(instruction::R_RX_PL_WID,
 				&ack->size, sizeof(ack->size));
 			
+			if(!ack->size || ack->size > fifo_size || status.rx_p_no > pipes - 1)
+				txrx_res = RES_SPI_ERR;
+			
+			ack->pipe = status.rx_p_no;
 			if(!txrx_res)
 			{
 				txrx_res = exec_instruction_with_read(instruction::R_RX_PAYLOAD,
