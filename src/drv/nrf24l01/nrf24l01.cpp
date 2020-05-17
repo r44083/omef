@@ -111,6 +111,10 @@ int8_t nrf24l01::get_conf(conf_t &conf)
 	if((res = read_reg(reg::EN_AA, &en_aa)))
 		return res;
 	
+	rf_setup_reg_t rf_setup;
+	if((res = read_reg(reg::RF_SETUP, &rf_setup)))
+		return res;
+	
 	uint8_t dynpd;
 	if(_conf.dev == dev::NRF24L01_PLUS)
 	{
@@ -121,6 +125,25 @@ int8_t nrf24l01::get_conf(conf_t &conf)
 		if((res = read_reg(reg::FEATURE, &feature)))
 			return res;
 		conf.dyn_payload = feature.en_dpl;
+		
+		if(rf_setup.nrf24l01_plus.rf_dr_low)
+			conf.datarate = datarate::_250_kbps;
+		else if(rf_setup.nrf24l01_plus.rf_dr_high)
+			conf.datarate = datarate::_2_Mbps;
+		else
+			conf.datarate = datarate::_1_Mbps;
+	}
+	else
+	{
+		conf.datarate = rf_setup.nrf24l01.rf_dr ? datarate::_2_Mbps :
+			datarate::_1_Mbps;
+	}
+	switch(rf_setup.nrf24l01.rf_pwr)
+	{
+		case _18_DBM: conf.power = pwr::_18_dBm; break;
+		case _12_DBM: conf.power = pwr::_12_dBm; break;
+		case _6_DBM: conf.power = pwr::_6_dBm; break;
+		case _0_DBM: conf.power = pwr::_0_dBm; break;
 	}
 	
 	for(uint8_t i = 0; i < pipes; i++)
@@ -158,7 +181,7 @@ int8_t nrf24l01::get_conf(conf_t &conf)
 	conf.tx_addr = tx_addr_val;
 	
 	conf.tx_auto_ack = (conf.tx_addr == conf.pipe[0].addr &&
-		conf.pipe[0].enable/* && conf.pipe[0].size == fifo_size*/);
+		conf.pipe[0].enable);
 	
 	return res;
 }
@@ -215,6 +238,17 @@ int8_t nrf24l01::set_conf(conf_t &conf)
 	if((res = write_reg(reg::TX_ADDR, &tx_addr_val, addr_max_size)))
 		return res;
 	
+	rf_setup_reg_t rf_setup;
+	if((res = read_reg(reg::RF_SETUP, &rf_setup)))
+		return res;
+	
+	switch(conf.power)
+	{
+		case pwr::_0_dBm: rf_setup.nrf24l01.rf_pwr = _0_DBM; break;
+		case pwr::_6_dBm: rf_setup.nrf24l01.rf_pwr = _6_DBM; break;
+		case pwr::_12_dBm: rf_setup.nrf24l01.rf_pwr = _12_DBM; break;
+		case pwr::_18_dBm: rf_setup.nrf24l01.rf_pwr = _18_DBM; break;
+	}
 	if(_conf.dev == dev::NRF24L01_PLUS)
 	{
 		if((res = write_reg(reg::DYNPD, &dynpd)))
@@ -232,7 +266,28 @@ int8_t nrf24l01::set_conf(conf_t &conf)
 		}
 		_conf.dyn_payload = feature.en_dpl;
 		_conf.ack_payload = feature.en_dpl && feature.en_ack_pay;
+		
+		if(conf.datarate == datarate::_250_kbps)
+		{
+			rf_setup.nrf24l01_plus.rf_dr_low = true;
+			rf_setup.nrf24l01_plus.rf_dr_high = false;
+		}
+		else if(conf.datarate == datarate::_2_Mbps)
+		{
+			rf_setup.nrf24l01_plus.rf_dr_low = false;
+			rf_setup.nrf24l01_plus.rf_dr_high = true;
+		}
+		else
+		{
+			rf_setup.nrf24l01_plus.rf_dr_low = false;
+			rf_setup.nrf24l01_plus.rf_dr_high = false;
+		}
 	}
+	else
+		rf_setup.nrf24l01.rf_dr = conf.datarate == datarate::_2_Mbps;
+	
+	if((res = write_reg(reg::RF_SETUP, &rf_setup)))
+		return res;
 	
 	if((res = exec_instruction(instruction::FLUSH_TX)))
 		return RES_SPI_ERR;
@@ -251,6 +306,13 @@ bool nrf24l01::is_conf_valid(conf_t &conf)
 	if(_conf.dev != dev::NRF24L01_PLUS && conf.dyn_payload)
 	{
 		// Dynamic payload size available only for nrf24l01+
+		ASSERT(0);
+		return false;
+	}
+	
+	if(_conf.dev == dev::NRF24L01 && conf.datarate == datarate::_250_kbps)
+	{
+		// 250 kbps datarate isn't available for nrf24l01
 		ASSERT(0);
 		return false;
 	}

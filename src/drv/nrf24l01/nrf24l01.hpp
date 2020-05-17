@@ -33,6 +33,9 @@ class nrf24l01
 		
 		int8_t init();
 		
+		// 250 kbps datarate available only for nrf24l01+
+		enum class datarate : uint8_t {_250_kbps, _1_Mbps, _2_Mbps};
+		enum class pwr : uint8_t {_0_dBm, _6_dBm, _12_dBm, _18_dBm};
 #pragma pack(push, 1)
 		struct conf_t
 		{
@@ -62,6 +65,8 @@ class nrf24l01
 			/* Dynamic payload size feature. Should be enabled for tx or rx
 			dynamic payload size support */
 			bool dyn_payload:1;
+			enum datarate datarate;
+			enum pwr power;
 		};
 #pragma pack(pop)
 		int8_t get_conf(conf_t &conf);

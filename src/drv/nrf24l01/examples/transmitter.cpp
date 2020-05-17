@@ -42,6 +42,7 @@ static void b1_cb(di *di, bool state, void *ctx)
 	
 	conf.tx_addr = 0xA5A5;
 	conf.tx_auto_ack = true;
+	conf.datarate = nrf24l01::datarate::_2_Mbps;
 	
 	res = nrf->set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);

@@ -32,6 +32,7 @@ static void nrf_task(void *pvParameters)
 	conf.pipe[1].size = nrf24l01::fifo_size;
 	conf.pipe[1].dyn_payload = true;
 	conf.dyn_payload = true;
+	conf.datarate = nrf24l01::datarate::_2_Mbps;
 	
 	res = nrf->set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
@@ -39,7 +40,7 @@ static void nrf_task(void *pvParameters)
 	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	while(1)
 	{
-		nrf24l01::packet_t packet, ack;
+		nrf24l01::packet_t packet = {}, ack = {};
 		strncpy((char *)ack.buff, "myack", sizeof(ack.buff));
 		ack.size = sizeof("myack") - 1;
 		ack.pipe = 1;
@@ -67,7 +68,7 @@ int main(void)
 	static gpio spi1_mosi_gpio(1, 5, gpio::mode::AF, 1);
 	static gpio spi1_miso_gpio(1, 4, gpio::mode::AF, 1);
 	static gpio spi1_clk_gpio(1, 3, gpio::mode::AF, 1);
-	static gpio nrf24l01_csn(1, 2, gpio::mode::DO, 1);
+	static gpio nrf24l01_csn(1, 8, gpio::mode::DO, 1);
 	static gpio nrf24l01_ce(1, 6, gpio::mode::DO, 0);
 	static gpio nrf24l01_irq(1, 7, gpio::mode::DI, 1);
 	
