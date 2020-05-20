@@ -15,15 +15,21 @@
 using namespace hal;
 using namespace drv;
 
+struct nrf_task_ctx_t
+{
+	nrf24l01 &nrf;
+	gpio &led;
+};
+
 static void nrf_task(void *pvParameters)
 {
-	nrf24l01 *nrf = (nrf24l01 *)pvParameters;
+	nrf_task_ctx_t *ctx = (nrf_task_ctx_t *)pvParameters;
 	
-	int8_t res = nrf->init();
+	int8_t res = ctx->nrf.init();
 	ASSERT(res == nrf24l01::RES_OK);
 	
 	nrf24l01::conf_t conf;
-	res = nrf->get_conf(conf);
+	res = ctx->nrf.get_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 	
 	conf.pipe[1].enable = true;
@@ -34,10 +40,9 @@ static void nrf_task(void *pvParameters)
 	conf.dyn_payload = true;
 	conf.datarate = nrf24l01::datarate::_2_Mbps;
 	
-	res = nrf->set_conf(conf);
+	res = ctx->nrf.set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 	
-	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	while(1)
 	{
 		nrf24l01::packet_t packet = {}, ack = {};
@@ -45,19 +50,19 @@ static void nrf_task(void *pvParameters)
 		ack.size = sizeof("myack") - 1;
 		ack.pipe = 1;
 		
-		res = nrf->read(packet, &ack);
+		res = ctx->nrf.read(packet, &ack);
 		if(res == nrf24l01::RES_OK && !strncmp((const char *)packet.buff,
 			"Hello!", sizeof("Hello!") - 1))
 		{
-			green_led.toggle();
+			ctx->led.toggle();
 		}
 	}
-	res = nrf->get_conf(conf);
+	res = ctx->nrf.get_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 	
 	conf.pipe[1].enable = false;
 	
-	res = nrf->set_conf(conf);
+	res = ctx->nrf.set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 }
 
@@ -65,6 +70,7 @@ int main(void)
 {
 	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	static gpio spi1_mosi_gpio(1, 5, gpio::mode::AF, 1);
 	static gpio spi1_miso_gpio(1, 4, gpio::mode::AF, 1);
 	static gpio spi1_clk_gpio(1, 3, gpio::mode::AF, 1);
@@ -87,7 +93,9 @@ int main(void)
 	static nrf24l01 nrf(nrf24l01_spi, nrf24l01_csn, nrf24l01_ce, nrf24l01_exti,
 		tim6);
 	
-	xTaskCreate(nrf_task, "nrf", configMINIMAL_STACK_SIZE + 20, &nrf, 1, NULL);
+	static nrf_task_ctx_t nrf_task_ctx = {.nrf = nrf, .led = green_led};
+	xTaskCreate(nrf_task, "nrf", configMINIMAL_STACK_SIZE + 20, &nrf_task_ctx,
+		1, NULL);
 	
 	vTaskStartScheduler();
 }
