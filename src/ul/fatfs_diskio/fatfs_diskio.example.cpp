@@ -12,19 +12,9 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+static void card_detection_cb(bool new_state)
 {
-	di *cd_di = (di *)pvParameters;
-	while(1)
-	{
-		cd_di->poll();
-		vTaskDelay(1);
-	}
-}
-
-static void card_detection_cb(di *di, bool state, void *ctx)
-{
-	if(state)
+	if(new_state)
 	{
 		f_unmount("SD");
 		return;
@@ -64,6 +54,18 @@ static void card_detection_cb(di *di, bool state, void *ctx)
 	f_close(&file);
 }
 
+static void di_poll_task(void *pvParameters)
+{
+	di *cd_di = (di *)pvParameters;
+	while(1)
+	{
+		bool new_state;
+		if(cd_di->poll_event(new_state))
+			card_detection_cb(new_state);
+		
+		vTaskDelay(1);
+	}
+}
 
 int main(void)
 {
@@ -87,11 +89,11 @@ int main(void)
 	static drv::sd_spi sd1(spi1, sd_cs, &sd_cd);
 	
 	static di cd_di(sd_cd, 100, 1);
-	cd_di.cb(card_detection_cb, NULL);
 	
 	ul::fatfs_diskio_add(0, sd1);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 200, &cd_di, 1, NULL);
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE + 200, &cd_di,
+		1, NULL);
 	
 	vTaskStartScheduler();
 }

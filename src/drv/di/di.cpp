@@ -6,13 +6,11 @@
 using namespace drv;
 using namespace hal;
 
-di::di(gpio &gpio, uint16_t threshold, bool default_state):
+di::di(gpio &gpio, size_t debounce_timeout, bool default_state):
 	_gpio(gpio),
-	_threshold(threshold),
+	_debounce_timeout(debounce_timeout),
 	_state(default_state),
-	_cnt(0),
-	_ctx(NULL),
-	_cb(NULL)
+	_cnt(0)
 {
 	ASSERT(_gpio.mode() == gpio::mode::DI);
 }
@@ -22,20 +20,19 @@ di::~di()
 	
 }
 
-void di::poll()
+bool di::poll_event(bool &new_state)
 {
-	bool tmp_state = _state;
+	bool prev_state = _state;
+	new_state = get_filtered_state();
 	
-	jitter_filter();
-	if((tmp_state != _state) && _cb)
-		_cb(this, _state, _ctx);
+	return prev_state != new_state;
 }
 
-void di::jitter_filter()
+bool di::get_filtered_state()
 {
 	if(_gpio.get())
 	{
-		if(_cnt < _threshold)
+		if(_cnt < _debounce_timeout)
 			_cnt++;
 		else
 			_state = true;
@@ -47,4 +44,6 @@ void di::jitter_filter()
 		else
 			_state = false;
 	}
+	
+	return _state;
 }

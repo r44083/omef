@@ -16,28 +16,21 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	di *b1_di = (di *)pvParameters;
-	while(1)
-	{
-		b1_di->poll();
-		vTaskDelay(1);
-	}
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
+	di &button_1;
+	nrf24l01 &nrf;
+	gpio &led;
+};
+static void di_poll_task(void *pvParameters)
 {
-	if(!state)
-		return;
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	
-	nrf24l01 *nrf = (nrf24l01 *)ctx;
-	
-	int8_t res = nrf->init();
+	int8_t res = ctx->nrf.init();
 	ASSERT(res == nrf24l01::RES_OK);
 	
 	nrf24l01::conf_t conf;
-	res = nrf->get_conf(conf);
+	res = ctx->nrf.get_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 	
 	conf.tx_addr = 0xA5A5;
@@ -45,25 +38,36 @@ static void b1_cb(di *di, bool state, void *ctx)
 	conf.dyn_payload = true;
 	conf.datarate = nrf24l01::datarate::_2_Mbps;
 	
-	res = nrf->set_conf(conf);
+	res = ctx->nrf.set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
 	
-	char tx_buff[sizeof("Hello!")] = {};
-	strncpy(tx_buff, "Hello!", sizeof(tx_buff));
-	nrf24l01::packet_t ack = {};
-	
-	res = nrf->write(tx_buff, sizeof(tx_buff), &ack);
-	nrf->power_down();
-	
-	static gpio green_led(2, 9, gpio::mode::DO, 0);
-	if(res == nrf24l01::RES_OK)
-		green_led.toggle();
+	while(1)
+	{
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				char tx_buff[sizeof("Hello!")] = {};
+				strncpy(tx_buff, "Hello!", sizeof(tx_buff));
+				nrf24l01::packet_t ack = {};
+				
+				res = ctx->nrf.write(tx_buff, sizeof(tx_buff), &ack);
+				ctx->nrf.power_down();
+				
+				if(res == nrf24l01::RES_OK)
+					ctx->led.toggle();
+			}
+		}
+		vTaskDelay(1);
+	}
 }
 
 int main(void)
 {
 	systick::init();
 	static gpio b1(0, 0, gpio::mode::DI, 0);
+	static gpio green_led(2, 9, gpio::mode::DO, 0);
 	static gpio spi1_mosi_gpio(0, 7, gpio::mode::AF, 1);
 	static gpio spi1_miso_gpio(0, 6, gpio::mode::AF, 1);
 	static gpio spi1_clk_gpio(0, 5, gpio::mode::AF, 1);
@@ -87,9 +91,11 @@ int main(void)
 		tim6);
 	
 	static di b1_di(b1, 50, 0);
-	b1_di.cb(b1_cb, &nrf);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 20, &b1_di, 1, NULL);
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .nrf = nrf, .led = green_led};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE + 20,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }

@@ -9,25 +9,30 @@ namespace drv
 {
 class di
 {
-	typedef void (*di_cb_t)(di *di, bool state, void *ctx);
-	
 	public:
-		di(hal::gpio &gpio, uint16_t threshold, bool default_state);
+		di(hal::gpio &gpio, size_t debounce_timeout, bool default_state);
 		~di();
 		
-		void cb(di_cb_t cb, void *ctx) { _cb = cb; _ctx = ctx; };
-		void poll();
-		uint16_t threshold() const { return _threshold; }
-		void threshold(uint16_t threshold) { _threshold = threshold; }
+		/**
+		 * @brief Poll di driver for new event. Should be called with 1 ms
+		 * period.
+		 * 
+		 * @param new_state New gpio state after debouncing.
+		 * @return true  New event has happened, check new_state and handle it.
+		 * @return false No event has happened.
+		 */
+		bool poll_event(bool &new_state);
+		
+		size_t debounce_timeout() const { return _debounce_timeout; }
+		void debounce_timeout(size_t debounce_timeout)
+		{ _debounce_timeout = debounce_timeout; }
 		
 	private:
-		void jitter_filter();
+		bool get_filtered_state();
 		
 		hal::gpio &_gpio;
-		uint16_t _threshold;
+		size_t _debounce_timeout;
 		bool _state;
-		uint16_t _cnt;
-		void *_ctx;
-		di_cb_t _cb;
+		size_t _cnt;
 };
 }

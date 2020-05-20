@@ -12,6 +12,13 @@
 using namespace hal;
 using namespace drv;
 
+struct di_poll_task_ctx_t
+{
+	di &button_1;
+	spi &spi;
+	gpio &dev1_cs;
+};
+
 static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
@@ -22,33 +29,24 @@ static void heartbeat_task(void *pvParameters)
 	}
 }
 
-static void di_task(void *pvParameters)
+static void di_poll_task(void *pvParameters)
 {
-	di *b1_di = (di *)pvParameters;
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		b1_di->poll();
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				uint8_t tx_buff[5] = {0xF0, 0xF1, 0xF2, 0xF3, 0xF4};
+				uint8_t rx_buff[5];
+				int8_t res = ctx->spi.exch(tx_buff, rx_buff, sizeof(tx_buff),
+					&ctx->dev1_cs);
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-struct b1_ctx_t
-{
-	spi *lis302_spi;
-	gpio *lis302_cs;
-};
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	b1_ctx_t *b1_ctx = (b1_ctx_t *)ctx;
-	
-	uint8_t tx_buff[5] = {0xF0, 0xF1, 0xF2, 0xF3, 0xF4};
-	uint8_t rx_buff[5];
-	int8_t res = b1_ctx->lis302_spi->exch(tx_buff, rx_buff, sizeof(tx_buff),
-		b1_ctx->lis302_cs);
 }
 
 int main(void)
@@ -72,12 +70,13 @@ int main(void)
 	
 	static di b1_di(b1, 50, 1);
 	
-	b1_ctx_t b1_ctx = {.lis302_spi = &spi1, .lis302_cs = &lis302_cs};
-	b1_di.cb(b1_cb, &b1_ctx);
-	
 	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
 		&green_led, 1, NULL);
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 2, NULL);
+	
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .spi = spi1, .dev1_cs = lis302_cs};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 2, NULL);
 	
 	vTaskStartScheduler();
 }

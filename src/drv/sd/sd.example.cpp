@@ -1,4 +1,5 @@
 // Example for STM32F4DISCOVERY development board
+// See another example in src/ul/fatfs_diskio/fatfs_diskio.example.cpp
 
 #include "gpio/gpio.hpp"
 #include "spi/spi.hpp"
@@ -11,29 +12,31 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	di *cd_di = (di *)pvParameters;
+	di &card_detection_input;
+	sd_spi &sd;
+};
+static void di_poll_task(void *pvParameters)
+{
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		cd_di->poll();
+		bool new_state;
+		if(ctx->card_detection_input.poll_event(new_state))
+		{
+			if(!new_state)
+			{
+				int8_t res = ctx->sd.init();
+				if(res == sd::RES_OK)
+				{
+					sd_csd_t csd;
+					res = ctx->sd.read_csd(&csd);
+				}
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-static void sd_cb(di *di, bool state, void *ctx)
-{
-	if(state)
-		return;
-	
-	sd *sd1 = (sd *)ctx;
-	
-	int8_t res = sd1->init();
-	if(res != sd::RES_OK)
-		return;
-	
-	sd_csd_t csd;
-	res = sd1->read_csd(&csd);
 }
 
 int main(void)
@@ -57,9 +60,11 @@ int main(void)
 	static sd_spi sd1(spi1, sd_cs, &sd_cd);
 	
 	static di cd_di(sd_cd, 30, 1);
-	cd_di.cb(sd_cb, &sd1);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE + 200, &cd_di, 1, NULL);
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.card_detection_input = cd_di, .sd = sd1};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE + 200,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }

@@ -12,25 +12,28 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	di *b1 = (di *)pvParameters;
+	di &button_1;
+	ds18b20 &ds18b20;
+};
+
+static void di_poll_task(void *pvParameters)
+{
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		b1->poll();
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				float temp = 0;
+				int8_t res = ctx->ds18b20.get_temp(0, &temp);
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	ds18b20 *_ds18b20 = (ds18b20 *)ctx;
-	
-	float temp = 0;
-	int8_t res = _ds18b20->get_temp(0, &temp);
 }
 
 int main(void)
@@ -52,9 +55,11 @@ int main(void)
 	static ds18b20 _ds18b20(_onewire);
 	
 	static di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &_ds18b20);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .ds18b20 = _ds18b20};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }

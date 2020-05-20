@@ -12,6 +12,12 @@
 using namespace hal;
 using namespace drv;
 
+struct di_poll_task_ctx_t
+{
+	di &button_1;
+	i2c &i2c;
+};
+
 static void heartbeat_task(void *pvParameters)
 {
 	gpio *green_led = (gpio *)pvParameters;
@@ -22,29 +28,26 @@ static void heartbeat_task(void *pvParameters)
 	}
 }
 
-static void di_task(void *pvParameters)
+static void di_poll_task(void *pvParameters)
 {
-	di *b1_di = (di *)pvParameters;
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		b1_di->poll();
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				uint8_t tx_buff[5] = {0xF0, 0xF1, 0xF2, 0xF3, 0xF4};
+				uint8_t rx_buff[5];
+				
+				// lis302
+				int8_t res = ctx->i2c.exch(11, tx_buff, sizeof(tx_buff),
+					rx_buff, sizeof(rx_buff));
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	i2c *i2c1 = (i2c *)ctx;
-
-	uint8_t tx_buff[5] = {0xF0, 0xF1, 0xF2, 0xF3, 0xF4};
-	uint8_t rx_buff[5];
-	
-	// lis302
-	int8_t res = i2c1->exch(11, tx_buff, sizeof(tx_buff), rx_buff,
-		sizeof(rx_buff));
 }
 
 int main(void)
@@ -64,11 +67,14 @@ int main(void)
 		i2c1_scl);
 	
 	static di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &i2c1);
 	
 	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
 		&green_led, 1, NULL);
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 2, NULL);
+	
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .i2c = i2c1};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 2, NULL);
 	
 	vTaskStartScheduler();
 }

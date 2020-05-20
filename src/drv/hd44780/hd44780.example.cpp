@@ -11,27 +11,19 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	di *cd_di = (di *)pvParameters;
-	while(1)
-	{
-		cd_di->poll();
-		vTaskDelay(1);
-	}
-}
+	di &button_1;
+	hd44780 &lcd;
+};
 
-static void b1_cb(di *di, bool state, void *ctx)
+static void di_poll_task(void *pvParameters)
 {
-	if(!state)
-		return;
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	
-	hd44780 *lcd = (hd44780 *)ctx;
+	ctx->lcd.init();
+	ctx->lcd.print(0, "Test");
 	
-	lcd->init();
-	lcd->print(0, "Test");
-	
-	// Define custom symbol
 	uint8_t cgram[8][8] =
 	{
 		{
@@ -45,11 +37,24 @@ static void b1_cb(di *di, bool state, void *ctx)
 			0b00011000
 		}
 	};
-	lcd->write_cgram(cgram);
+	ctx->lcd.write_cgram(cgram);
 	
-	lcd->print(64, char(0)); // goto the line 2 and print custom symbol
-	lcd->print(20, "Line 3");
-	lcd->print(84, "Line 4");
+	ctx->lcd.print(64, char(0)); // goto the line 2 and print custom symbol
+	ctx->lcd.print(20, "Line 3");
+	ctx->lcd.print(84, "Line 4");
+	
+	while(1)
+	{
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				ctx->lcd.print(0, "Test");
+			}
+		}
+		vTaskDelay(1);
+	}
 }
 
 int main(void)
@@ -70,9 +75,10 @@ int main(void)
 	static hd44780 lcd(rs, rw, e, db4, db5, db6, db7, tim6);
 	
 	static di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &lcd);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	di_poll_task_ctx_t di_poll_task_ctx = {.button_1 = b1_di, .lcd = lcd};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }

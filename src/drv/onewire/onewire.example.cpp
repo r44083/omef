@@ -11,30 +11,32 @@
 using namespace hal;
 using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	di *b1 = (di *)pvParameters;
+	di &button_1;
+	onewire &onewire;
+};
+static void di_poll_task(void *pvParameters)
+{
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		b1->poll();
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				uint64_t rom;
+				int8_t res = ctx->onewire.read_rom(&rom);
+				if(res == onewire::RES_OK)
+				{
+					uint8_t tx_buff[3] = {0x01, 0x02, 0x03};
+					res = ctx->onewire.tx(rom, tx_buff, sizeof(tx_buff));
+				}
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-static void b1_cb(di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	onewire *_onewire = (onewire *)ctx;
-	
-	uint64_t rom = 0;
-	int8_t res = _onewire->read_rom(&rom);
-	if(res)
-		return;
-	
-	uint8_t tx_buff[3] = {0x01, 0x02, 0x03};
-	res = _onewire->tx(rom, tx_buff, sizeof(tx_buff));
 }
 
 int main(void)
@@ -55,9 +57,11 @@ int main(void)
 	static onewire _onewire(uart3);
 	
 	static di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &_onewire);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .onewire = _onewire};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }

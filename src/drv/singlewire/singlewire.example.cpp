@@ -10,26 +10,29 @@
 #include "task.h"
 
 using namespace hal;
+using namespace drv;
 
-static void di_task(void *pvParameters)
+struct di_poll_task_ctx_t
 {
-	drv::di *b1_di = (drv::di *)pvParameters;
+	di &button_1;
+	singlewire dht;
+};
+static void di_poll_task(void *pvParameters)
+{
+	di_poll_task_ctx_t *ctx = (di_poll_task_ctx_t *)pvParameters;
 	while(1)
 	{
-		b1_di->poll();
+		bool new_state;
+		if(ctx->button_1.poll_event(new_state))
+		{
+			if(new_state)
+			{
+				uint8_t buff[5];
+				int8_t res = ctx->dht.read(buff, sizeof(buff));
+			}
+		}
 		vTaskDelay(1);
 	}
-}
-
-static void b1_cb(drv::di *di, bool state, void *ctx)
-{
-	if(!state)
-		return;
-	
-	drv::singlewire *_singlewire = (drv::singlewire *)ctx;
-	
-	uint8_t buff[5];
-	int8_t res = _singlewire->read(buff, sizeof(buff));
 }
 
 int main(void)
@@ -43,13 +46,15 @@ int main(void)
 	
 	static exti singlewire_exti(singlewire_exti_gpio);
 	
-	static drv::singlewire _singlewire(singlewire_gpio, singlewire_tim,
+	static singlewire _singlewire(singlewire_gpio, singlewire_tim,
 		singlewire_exti);
 	
-	static drv::di b1_di(b1, 50, 1);
-	b1_di.cb(b1_cb, &_singlewire);
+	static di b1_di(b1, 50, 1);
 	
-	xTaskCreate(di_task, "di", configMINIMAL_STACK_SIZE, &b1_di, 1, NULL);
+	static di_poll_task_ctx_t di_poll_task_ctx =
+		{.button_1 = b1_di, .dht = _singlewire};
+	xTaskCreate(di_poll_task, "di_poll", configMINIMAL_STACK_SIZE,
+		&di_poll_task_ctx, 1, NULL);
 	
 	vTaskStartScheduler();
 }
