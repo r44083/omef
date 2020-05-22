@@ -36,6 +36,12 @@ class nrf24l01
 		// 250 kbps datarate available only for nrf24l01+
 		enum class datarate : uint8_t {_250_kbps, _1_Mbps, _2_Mbps};
 		enum class pwr : uint8_t {_0_dBm, _6_dBm, _12_dBm, _18_dBm};
+		enum class ard : uint8_t
+		{
+			_250_US, _500_US, _750_US, _1000_US, _1250_US, _1500_US, _1750_US,
+			_2000_US, _2250_US, _2500_US, _2750_US, _3000_US, _3250_US,
+			_3500_US, _3750_US, _4000_US
+		};
 #pragma pack(push, 1)
 		struct conf_t
 		{
@@ -67,6 +73,10 @@ class nrf24l01
 			bool dyn_payload:1;
 			enum datarate datarate;
 			enum pwr power;
+			// RF channel. Possible range is 0 - 125 (2400 to 2525 MHz)
+			uint8_t channel;
+			ard retransmit_delay;
+			uint8_t retransmit_count:4;
 		};
 #pragma pack(pop)
 		int8_t get_conf(conf_t &conf);

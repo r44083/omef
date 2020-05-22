@@ -183,6 +183,15 @@ int8_t nrf24l01::get_conf(conf_t &conf)
 	conf.tx_auto_ack = (conf.tx_addr == conf.pipe[0].addr &&
 		conf.pipe[0].enable);
 	
+	if((res = read_reg(reg::RF_CH, &conf.channel)))
+		return res;
+	
+	setup_retr_reg_t retr_reg;
+	if((res = read_reg(reg::SETUP_RETR, &retr_reg)))
+		return res;
+	conf.retransmit_count = retr_reg.arc;
+	conf.retransmit_delay = static_cast<nrf24l01::ard>(retr_reg.ard);
+	
 	return res;
 }
 
@@ -289,6 +298,17 @@ int8_t nrf24l01::set_conf(conf_t &conf)
 	if((res = write_reg(reg::RF_SETUP, &rf_setup)))
 		return res;
 	
+	if((res = write_reg(reg::RF_CH, &conf.channel)))
+		return res;
+	
+	setup_retr_reg_t retr_reg =
+	{
+		.arc = conf.retransmit_count,
+		.ard = static_cast<nrf24l01_priv::ard_t>(conf.retransmit_delay)
+	};
+	if((res = write_reg(reg::SETUP_RETR, &retr_reg)))
+		return res;
+	
 	if((res = exec_instruction(instruction::FLUSH_TX)))
 		return RES_SPI_ERR;
 	
@@ -313,6 +333,12 @@ bool nrf24l01::is_conf_valid(conf_t &conf)
 	if(_conf.dev == dev::NRF24L01 && conf.datarate == datarate::_250_kbps)
 	{
 		// 250 kbps datarate isn't available for nrf24l01
+		ASSERT(0);
+		return false;
+	}
+	
+	if(conf.channel > 125)
+	{
 		ASSERT(0);
 		return false;
 	}

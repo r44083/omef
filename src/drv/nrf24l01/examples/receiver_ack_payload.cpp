@@ -38,7 +38,10 @@ static void nrf_task(void *pvParameters)
 	conf.pipe[1].size = nrf24l01::fifo_size;
 	conf.pipe[1].dyn_payload = true;
 	conf.dyn_payload = true;
-	conf.datarate = nrf24l01::datarate::_2_Mbps;
+	conf.datarate = nrf24l01::datarate::_250_kbps;
+	conf.channel = 0;
+	conf.retransmit_delay = nrf24l01::ard::_4000_US;
+	conf.retransmit_count = 15;
 	
 	res = ctx->nrf.set_conf(conf);
 	ASSERT(res == nrf24l01::RES_OK);
