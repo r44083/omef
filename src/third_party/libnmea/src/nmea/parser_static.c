@@ -29,9 +29,6 @@ DECLARE_PARSER_API(gpgga)
 #ifdef ENABLE_GPRMC
 DECLARE_PARSER_API(gprmc)
 #endif
-#ifdef ENABLE_GPGSV
-DECLARE_PARSER_API(gpgsv)
-#endif
 
 nmea_parser_module_s parsers[PARSER_COUNT];
 
@@ -56,9 +53,6 @@ nmea_load_parsers()
 #endif
 #ifdef ENABLE_GPRMC
 	PARSER_LOAD(gprmc);
-#endif
-#ifdef ENABLE_GPGSV
-	PARSER_LOAD(gpgsv);
 #endif
 
 	return PARSER_COUNT;
@@ -91,7 +85,11 @@ nmea_get_parser_by_sentence(const char *sentence)
 	int i;
 
 	for (i = 0; i < PARSER_COUNT; i++) {
-		if (0 == strncmp(sentence + 3, parsers[i].parser.type_word, sizeof(parsers[i].parser.type_word))) {
+		if (NULL == parsers[i].parser.type_word) {
+			continue;
+		}
+
+		if (0 == strncmp(sentence + 1, parsers[i].parser.type_word, NMEA_PREFIX_LENGTH)) {
 			return &(parsers[i]);
 		}
 	}

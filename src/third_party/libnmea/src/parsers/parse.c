@@ -59,7 +59,6 @@ int
 nmea_time_parse(char *s, struct tm *time)
 {
 	char *rv;
-	uint32_t x;
 
 	memset(time, 0, sizeof (struct tm));
 
@@ -67,12 +66,9 @@ nmea_time_parse(char *s, struct tm *time)
 		return -1;
 	}
 
-	x = strtoul(s, &rv, 10);
-	time->tm_hour = x / 10000;
-	time->tm_min = (x % 10000) / 100;
-	time->tm_sec = x % 100;
-	if (rv && *rv == '.') {
-		/* TODO There is a sub-second field. */
+	rv = strptime(s, NMEA_TIME_FORMAT, time);
+	if (NULL == rv || (int) (rv - s) != NMEA_TIME_FORMAT_LEN) {
+		return -1;
 	}
 
 	return 0;
@@ -82,7 +78,6 @@ int
 nmea_date_parse(char *s, struct tm *time)
 {
 	char *rv;
-	uint32_t x;
 
 	// Assume it has been already cleared
 	// memset(time, 0, sizeof (struct tm));
@@ -91,10 +86,10 @@ nmea_date_parse(char *s, struct tm *time)
 		return -1;
 	}
 
-	x = strtoul(s, &rv, 10);
-	time->tm_mday = x / 10000;
-	time->tm_mon = ((x % 10000) / 100) - 1;
-	time->tm_year = x % 100;
+	rv = strptime(s, NMEA_DATE_FORMAT, time);
+	if (NULL == rv || (int) (rv - s) != NMEA_DATE_FORMAT_LEN) {
+		return -1;
+	}
 
 	// Normalize tm_year according to C standard library
 	if (time->tm_year > 1900)

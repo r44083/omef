@@ -7,7 +7,7 @@ init(nmea_parser_s *parser)
 {
 	/* Declare what sentence type to parse */
 	NMEA_PARSER_TYPE(parser, NMEA_GPRMC);
-	NMEA_PARSER_PREFIX(parser, "RMC");
+	NMEA_PARSER_PREFIX(parser, "GPRMC");
 	return 0;
 }
 
@@ -45,17 +45,6 @@ parse(nmea_parser_s *parser, char *value, int val_index)
 	case NMEA_GPRMC_TIME:
 		/* Parse time */
 		if (-1 == nmea_time_parse(value, &data->time)) {
-			return -1;
-		}
-		break;
-
-	case NMEA_GPRMC_STATUS:
-		/* Parse status */
-		if (*value == 'A') {
-			data->valid = true;
-		} else if (*value == 'V') {
-			data->valid = false;
-		} else {
 			return -1;
 		}
 		break;

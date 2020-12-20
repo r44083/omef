@@ -7,7 +7,7 @@ init(nmea_parser_s *parser)
 {
 	/* Declare what sentence type to parse */
 	NMEA_PARSER_TYPE(parser, NMEA_GPGGA);
-	NMEA_PARSER_PREFIX(parser, "GGA");
+	NMEA_PARSER_PREFIX(parser, "GPGGA");
 	return 0;
 }
 
@@ -77,11 +77,6 @@ parse(nmea_parser_s *parser, char *value, int val_index)
 		if (NMEA_CARDINAL_DIR_UNKNOWN == data->longitude.cardinal) {
 			return -1;
 		}
-		break;
-
-	case NMEA_GPGGA_POSITION_FIX:
-		/* Parse position fix indicator */
-		data->position_fix = atoi(value);
 		break;
 
 	case NMEA_GPGGA_N_SATELLITES:
