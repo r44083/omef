@@ -6,7 +6,7 @@
 			"name": "omef",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/build/bin/${workspaceRootFolderName}.elf",
+			"program": "${workspaceFolder}/build/${workspaceRootFolderName}.elf",
 			"windows": {"miDebuggerPath": "arm-none-eabi-gdb.exe"},
 			"linux": {"miDebuggerPath": "arm-none-eabi-gdb"},
 			"cwd": "${workspaceFolder}",
