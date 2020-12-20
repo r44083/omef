@@ -279,9 +279,17 @@ target_include_directories(${TARGET}
         Include
 )
 
+if (CPU_M_OPTIONS MATCHES cortex-m0)
+    set(CONDITIONAL_CPU_DEF ARM_MATH_CM0)
+elseif(CPU_M_OPTIONS MATCHES cortex-m3)
+    set(CONDITIONAL_CPU_DEF ARM_MATH_CM3)
+elseif(CPU_M_OPTIONS MATCHES cortex-m4)
+    set(CONDITIONAL_CPU_DEF ARM_MATH_CM4)
+endif()
+
 target_compile_definitions(${TARGET}
     PUBLIC
-        ARM_MATH_CM4
+        ${CONDITIONAL_CPU_DEF}
     PRIVATE
         __FPU_PRESENT=1
 )
