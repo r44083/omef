@@ -1,7 +1,7 @@
 set(TARGET cmsis)
 
 if(NOT DEFINED DEVICE_DEF)
-    message(FATAL_ERROR "DEVICE_DEF is not defined. Example: STM32F407xx")
+    message(FATAL_ERROR "DEVICE_DEF is not defined. Example: STM32F100xB")
 endif()
 
 add_library(${TARGET} STATIC
