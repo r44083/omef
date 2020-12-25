@@ -279,19 +279,21 @@ target_include_directories(${TARGET}
         Include
 )
 
-if (CPU_M_OPTIONS MATCHES cortex-m0)
-    set(CONDITIONAL_CPU_DEF ARM_MATH_CM0)
-elseif(CPU_M_OPTIONS MATCHES cortex-m3)
-    set(CONDITIONAL_CPU_DEF ARM_MATH_CM3)
-elseif(CPU_M_OPTIONS MATCHES cortex-m4)
-    set(CONDITIONAL_CPU_DEF ARM_MATH_CM4)
+# Select ARM_MATH_XXX by COMPILE_OPTIONS
+get_property(COMPILE_OPTIONS DIRECTORY . PROPERTY COMPILE_OPTIONS)
+if(COMPILE_OPTIONS MATCHES cortex-m0)
+    set(ARM_MATH_DEF ARM_MATH_CM0)
+elseif(COMPILE_OPTIONS MATCHES cortex-m3)
+    set(ARM_MATH_DEF ARM_MATH_CM3)
+elseif(COMPILE_OPTIONS MATCHES cortex-m4)
+    set(ARM_MATH_DEF ARM_MATH_CM4)
 endif()
 
 target_compile_definitions(${TARGET}
     PUBLIC
-        ${CONDITIONAL_CPU_DEF}
+        ${ARM_MATH_DEF}
     PRIVATE
-        __FPU_PRESENT=1
+        __FPU_PRESENT=$<BOOL:$<FILTER:${COMPILE_OPTIONS},INCLUDE,-mfpu=>>
 )
 
 target_link_libraries(${TARGET} PRIVATE cmsis)

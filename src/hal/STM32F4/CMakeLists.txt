@@ -20,9 +20,5 @@ target_include_directories(${TARGET} PUBLIC
     .
 )
 
-target_link_options(${TARGET} PUBLIC
-    -T${CMAKE_CURRENT_SOURCE_DIR}/STM32F407VGTx_FLASH.ld
-)
-
 target_link_libraries(${TARGET} PRIVATE cmsis)
 target_link_libraries(${TARGET} PUBLIC freertos)

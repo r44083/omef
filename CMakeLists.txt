@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain-arm-gcc-cortex.cmake)
 
@@ -13,12 +13,32 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+set(CPU_OPTIONS
+    -mcpu=cortex-m4
+    -mfloat-abi=hard
+    -mfpu=fpv4-sp-d16
+)
+
+add_compile_options(
+    ${CPU_OPTIONS}
+    -mthumb
+    -ffunction-sections
+    -fdata-sections
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
+)
+
 include_directories(./src)
 
 add_subdirectory(src/drv)
 add_subdirectory(src/hal/STM32F4)
+
+set(ST_DEVICE_DEF STM32F407xx)
 add_subdirectory(src/hal/STM32F4/CMSIS)
 #add_subdirectory(src/hal/STM32F4/CMSIS/DSP)
+
 add_subdirectory(src/third_party/FreeRTOS)
 
 # libnmea is a drv/gps/nmea dependency
@@ -30,7 +50,11 @@ add_subdirectory(src/third_party/libnmea)
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/common/assert.c)
 
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    ${CPU_OPTIONS}
+    -Wl,--gc-sections
+    --specs=nano.specs
     -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref
+    -T${CMAKE_CURRENT_SOURCE_DIR}/src/hal/STM32F4/STM32F407VGTx_FLASH.ld
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
