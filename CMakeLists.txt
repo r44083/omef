@@ -47,6 +47,10 @@ set(NMEA_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(NMEA_UNIT_TESTS OFF CACHE BOOL "")
 add_subdirectory(src/third_party/libnmea)
 
+add_subdirectory(src/third_party/FatFs)
+add_subdirectory(src/third_party/printf)
+add_subdirectory(src/ul/fatfs_diskio)
+
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/common/assert.c)
 
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
@@ -64,6 +68,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     #cmsis-dsp-lib
     freertos
     nmea
+    fatfs
+    printf
+    fatfs_diskio
 )
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SUFFIX ".elf")
