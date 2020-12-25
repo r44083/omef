@@ -25,4 +25,4 @@ target_link_options(${TARGET} PUBLIC
 )
 
 target_link_libraries(${TARGET} PRIVATE cmsis)
-target_link_libraries(${TARGET} PRIVATE freertos)
+target_link_libraries(${TARGET} PUBLIC freertos)
