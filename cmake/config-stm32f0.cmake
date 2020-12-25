@@ -1,11 +1,11 @@
 # Main cmake file for project based on STM32F0
 
-set(CPU_OPTIONS
+set(CPU_FLAGS
     -mcpu=cortex-m0
 )
 
 add_compile_options(
-    ${CPU_OPTIONS}
+    ${CPU_FLAGS}
     -mthumb
     -ffunction-sections
     -fdata-sections
@@ -39,7 +39,7 @@ add_subdirectory(src/ul/fatfs_diskio)
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/common/assert.c)
 
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
-    ${CPU_OPTIONS}
+    ${CPU_FLAGS}
     -Wl,--gc-sections
     --specs=nano.specs
     -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref
