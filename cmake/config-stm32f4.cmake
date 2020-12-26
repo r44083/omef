@@ -37,6 +37,7 @@ add_subdirectory(src/third_party/libnmea)
 add_subdirectory(src/third_party/FatFs)
 add_subdirectory(src/third_party/printf)
 add_subdirectory(src/ul/fatfs_diskio)
+add_subdirectory(src/ul/syslog)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/common/assert.c)
 
@@ -59,6 +60,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     fatfs
     printf
     fatfs_diskio
+    syslog
 )
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SUFFIX ".elf")

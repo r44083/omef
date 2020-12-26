@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include "ul/list/list.hpp"
+#include <vector>
 #include "FreeRTOS.h"
 #include "semphr.h"
 
@@ -67,7 +67,7 @@ class syslog
 				return (cb == a.cb && ctx == a.ctx);
 			}
 		};
-		list<cb_ctx_t> cb_ctx_list;
+		std::vector<cb_ctx_t>cb_ctx_list;
 		
 		enum tag_t {DBG, INF, WRN, ERR};
 		static constexpr const char *tags[] = {"(dbg) ", "(inf) ", "(wrn) ",

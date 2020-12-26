@@ -25,12 +25,12 @@ static void uart_write(uint8_t *buff, size_t size, void *ctx)
 {
 	uart *uart3 = (uart *)ctx;
 	
-	uart3->tx(buff, size);
+	uart3->write(buff, size);
 }
 
 int main(void)
 {
-	// Example for STM32F4DISCOVERY development board
+	systick::init();
 	static gpio green_led(3, 12, gpio::mode::DO, 0);
 	static gpio uart3_tx_gpio(3, 8, gpio::mode::AF, 0);
 	static gpio uart3_rx_gpio(1, 11, gpio::mode::AF, 0);
@@ -45,7 +45,7 @@ int main(void)
 	
 	log().add_output(uart_write, &uart3);
 	
-	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE,
+	xTaskCreate(heartbeat_task, "heartbeat", configMINIMAL_STACK_SIZE + 30,
 		&green_led, 1, NULL);
 	
 	vTaskStartScheduler();

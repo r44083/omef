@@ -6,6 +6,7 @@
 #include "third_party/printf/printf.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include <algorithm>
 
 using namespace ul;
 
@@ -21,27 +22,16 @@ void syslog::add_output(cb_t cb, void *ctx)
 {
 	ASSERT(cb);
 	
-	cb_ctx_t cb_ctx = {.cb = cb, .ctx = ctx};
-	
-	list_elem<cb_ctx_t> *elem = new list_elem<cb_ctx_t>(cb_ctx);
-	ASSERT(elem);
-	
-	cb_ctx_list.add(elem);
+	cb_ctx_list.push_back({.cb = cb, .ctx = ctx});
 }
 
 void syslog::del_output(cb_t cb, void *ctx)
 {
-	if(cb_ctx_list.is_empty())
+	if(cb_ctx_list.empty())
 		return;
 	
-	cb_ctx_t cb_ctx = {.cb = cb, .ctx = ctx};
-	
-	list_elem<cb_ctx_t> *elem = cb_ctx_list.find(cb_ctx);
-	if(elem)
-	{
-		cb_ctx_list.remove(elem);
-		delete elem;
-	}
+	cb_ctx_list.erase(std::remove(cb_ctx_list.begin(), cb_ctx_list.end(),
+		(cb_ctx_t){.cb = cb, .ctx = ctx}), cb_ctx_list.end());
 }
 
 void syslog::dbg(const char *format, ...)
@@ -82,7 +72,7 @@ void syslog::err(const char *format, ...)
 
 void syslog::print(tag_t tag, const char *format, va_list va)
 {
-	if(cb_ctx_list.is_empty())
+	if(cb_ctx_list.empty())
 		return;
 	
 	// Protect message[] buffer with semaphore
@@ -95,10 +85,9 @@ void syslog::print(tag_t tag, const char *format, va_list va)
 	
 	len += add_eol(message);
 	
-	for(list_elem<cb_ctx_t> *cb_ctx = cb_ctx_list.head(); cb_ctx;
-		cb_ctx = cb_ctx->next())
+	for(const auto &cb_ctx : cb_ctx_list)
 	{
-		cb_ctx->data().cb((uint8_t *)message, len, cb_ctx->data().ctx);
+		cb_ctx.cb((uint8_t *)message, len, cb_ctx.ctx);
 	}
 	
 	xSemaphoreGive(api_lock);
