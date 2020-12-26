@@ -15,6 +15,11 @@ add_library(${TARGET} STATIC
     singlewire/singlewire.cpp
 )
 
-target_link_libraries(${TARGET} PUBLIC hal)
-target_link_libraries(${TARGET} PUBLIC freertos)
-target_link_libraries(${TARGET} PRIVATE nmea)
+target_link_libraries(${TARGET}
+    PUBLIC
+        hal
+        freertos
+    PRIVATE
+        nmea
+        printf
+)

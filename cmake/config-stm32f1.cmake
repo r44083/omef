@@ -44,7 +44,7 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
     -specs=nano.specs
     -specs=nosys.specs
     -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref
-    -T${CMAKE_CURRENT_SOURCE_DIR}/src/hal/STM32F1/STM32F100XB_FLASH.ld
+    -T ${CMAKE_CURRENT_SOURCE_DIR}/src/hal/STM32F1/STM32F100XB_FLASH.ld
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE

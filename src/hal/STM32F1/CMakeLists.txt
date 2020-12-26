@@ -19,5 +19,9 @@ target_include_directories(${TARGET} PUBLIC
     .
 )
 
-target_link_libraries(${TARGET} PRIVATE cmsis)
-target_link_libraries(${TARGET} PUBLIC freertos)
+target_link_libraries(${TARGET}
+    PUBLIC
+        freertos
+    PRIVATE
+        cmsis
+)

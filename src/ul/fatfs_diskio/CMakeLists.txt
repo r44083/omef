@@ -6,4 +6,8 @@ add_library(${TARGET} STATIC
     fatfs_diskio_sd.cpp
 )
 
-target_link_libraries(${TARGET} PUBLIC drv)
+target_link_libraries(${TARGET}
+    PUBLIC
+        drv
+        fatfs
+)

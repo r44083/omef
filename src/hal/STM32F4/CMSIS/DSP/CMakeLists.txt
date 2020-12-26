@@ -296,4 +296,7 @@ target_compile_definitions(${TARGET}
         __FPU_PRESENT=$<BOOL:$<FILTER:${COMPILE_OPTIONS},INCLUDE,-mfpu=>>
 )
 
-target_link_libraries(${TARGET} PRIVATE cmsis)
+target_link_libraries(${TARGET}
+    PRIVATE
+        cmsis
+)
