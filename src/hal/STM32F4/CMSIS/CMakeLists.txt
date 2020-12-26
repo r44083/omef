@@ -5,11 +5,8 @@ if(NOT DEFINED DEVICE_DEF)
 endif()
 
 add_library(${TARGET} STATIC
-    # Select startup file (Device/STM32F4xx/Source/*.s) depending on DEVICE_DEF
     Device/STM32F4xx/Source/startup_$<LOWER_CASE:${DEVICE_DEF}>.s
-    
     Device/STM32F4xx/Source/system_stm32f4xx.c
-    syscalls.c
 )
 
 target_include_directories(${TARGET}

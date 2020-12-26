@@ -43,7 +43,8 @@ add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/common/assert.c)
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
     ${CPU_FLAGS}
     -Wl,--gc-sections
-    --specs=nano.specs
+    -specs=nano.specs
+    -specs=nosys.specs
     -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref
     -T${CMAKE_CURRENT_SOURCE_DIR}/src/hal/STM32F4/STM32F407VGTx_FLASH.ld
 )
