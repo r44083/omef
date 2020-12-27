@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -142,11 +142,7 @@ static ret_code_t cc310_backend_hmac_init(void      * const p_context,
     mutex_locked = cc310_backend_mutex_trylock();
     VERIFY_TRUE(mutex_locked, NRF_ERROR_CRYPTO_BUSY);
 
-    cc310_backend_enable();
-
     err_code = CRYS_HMAC_Init(&p_ctx->crys_context, hash_mode, (uint8_t *)p_key, key_size);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 
@@ -176,8 +172,6 @@ static ret_code_t cc310_backend_hmac_update(void    * const p_context,
     mutex_locked = cc310_backend_mutex_trylock();
     VERIFY_TRUE(mutex_locked, NRF_ERROR_CRYPTO_BUSY);
 
-    cc310_backend_enable();
-
     // If the input is larger than CC310_MAX_LENGTH_DMA_OPERATIONS, split into smaller
     do
     {
@@ -190,8 +184,6 @@ static ret_code_t cc310_backend_hmac_update(void    * const p_context,
         p_cur += cur_len;
 
     } while (err_code == CRYS_OK && len_left > 0);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 
@@ -219,11 +211,7 @@ static ret_code_t cc310_backend_hmac_finalize(void      * const p_context,
     mutex_locked = cc310_backend_mutex_trylock();
     VERIFY_TRUE(mutex_locked, NRF_ERROR_CRYPTO_BUSY);
 
-    cc310_backend_enable();
-
     err_code = CRYS_HMAC_Finish(&p_ctx->crys_context, *p_int_digest);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 

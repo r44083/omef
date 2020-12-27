@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2012 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -628,7 +628,7 @@ uint16_t ble_advdata_search(uint8_t const * p_encoded_data,
 
     uint16_t i = 0;
 
-    while (((i < *p_offset) || (p_encoded_data[i + 1] != ad_type)) && (i < data_len))
+    while ((i + 1 < data_len) && ((i < *p_offset) || (p_encoded_data[i + 1] != ad_type)))
     {
         // Jump to next data.
         i += (p_encoded_data[i] + 1);
@@ -641,10 +641,10 @@ uint16_t ble_advdata_search(uint8_t const * p_encoded_data,
     else
     {
         uint16_t offset = i + 2;
-        uint16_t len    = p_encoded_data[i] - 1;
-        if ((offset + len) > data_len)
+        uint16_t len    = p_encoded_data[i] ? (p_encoded_data[i] - 1) : 0;
+        if (!len || ((offset + len) > data_len))
         {
-            // Malformed. Extends beyond provided data.
+            // Malformed. Zero length or extends beyond provided data.
             return 0;
         }
         *p_offset = offset;

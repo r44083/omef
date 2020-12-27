@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,15 +17,15 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
-
 
 #ifndef TILE_PLAYER_H
 #define TILE_PLAYER_H
 
 #include <stdint.h>
 #include <stdbool.h>
+
+extern uint8_t g_FindActivate_SongPlayed;
 
 #include "modules/tile_song_module.h"
 #include "boards.h"
@@ -36,9 +36,19 @@
 
 void InitPlayer(void);
 void UninitPlayer(void);
-int PlaySong(uint8_t number, uint8_t strength);
+int  PlaySong(uint8_t number, uint8_t strength, uint8_t duration);
 int StopSong(void);
 bool SongPlaying(void);
+void tile_boot_config_player(void);
+bool CheckFindSong(void);
+
+typedef struct song_info
+{
+  const uint8_t *p_firstNote;     // pointer to start of song
+  const uint8_t *p_currentNote;   // pointer to current note
+  uint8_t        duration; 
+}song_t;
+
 
 #endif
 

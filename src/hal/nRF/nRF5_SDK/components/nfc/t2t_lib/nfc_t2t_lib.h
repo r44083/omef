@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Telit Communications Cyprus Ltd
+ * Copyright (c) 2015 - 2020, Telit Communications Cyprus Ltd
  *
  * All rights reserved.
  *
@@ -125,9 +125,7 @@ ret_code_t nfc_t2t_setup(nfc_t2t_callback_t callback, void * p_context);
 
 /** @brief Function for setting an NFC parameter.
  *
- * @note Not implemented. For future use.
- *
- * This function allows to set any parameter defined as available by HAL_NFC.
+ * This function allows to set an NFC configuration parameter.
  *
  * @param[in] id           ID of the parameter to set.
  * @param[in] p_data       Pointer to a buffer containing the data to set.
@@ -140,8 +138,6 @@ ret_code_t nfc_t2t_setup(nfc_t2t_callback_t callback, void * p_context);
 ret_code_t nfc_t2t_parameter_set(nfc_t2t_param_id_t id, void * p_data, size_t data_length);
 
 /** @brief Function for querying an NFC parameter value.
- *
- * @note Not implemented. For future use.
  *
  * The queried value will be placed into the passed data buffer. If the buffer
  * is too small, p_max_data_length will contain the required buffer size. If the

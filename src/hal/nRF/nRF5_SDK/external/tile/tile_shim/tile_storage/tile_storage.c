@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -30,6 +29,7 @@
 #include "tile_storage.h"
 
 #include "tile_lib.h"
+#include "tile_config.h"
 #include "modules/tile_tmd_module.h"
 
 #include "crc16.h"
@@ -63,6 +63,8 @@ struct tile_env_tag tile_env;
 static volatile bool write_in_progress   = false;
 static volatile bool write_one_more_time = false;
 
+const uint8_t interim_tile_id[8]    = INTERIM_TILE_ID;
+const uint8_t interim_tile_key[16]  = INTERIM_AUTH_KEY;
 /*******************************************************************************
  * Forward declarations
  ******************************************************************************/
@@ -158,6 +160,7 @@ void tile_storage_init(void)
       // Initialize to sane values 
       memset(&tile_persist, 0, sizeof(tile_persist));
       tile_checked->mode              = TILE_MODE_SHIPPING;
+      tile_checked->tdt_configuration = DEFAULT_TDT_CONFIG;
       memcpy(tile_checked->model_number, tile_model_number, TILE_MODEL_NUMBER_LEN);
       memcpy(tile_checked->hardware_version, tile_hw_version, TILE_HARDWARE_VERSION_LEN);
     }
@@ -165,8 +168,8 @@ void tile_storage_init(void)
     {
       memcpy(&tile_persist, p, sizeof(tile_persist));
     }
-
   }
+
   tile_unchecked->reset_count++;
 
   tile_store_app_data();

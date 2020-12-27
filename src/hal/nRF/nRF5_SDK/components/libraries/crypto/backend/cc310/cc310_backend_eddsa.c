@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -80,8 +80,6 @@ ret_code_t nrf_crypto_backend_ed25519_sign(
     mutex_locked = cc310_backend_mutex_trylock();
     VERIFY_TRUE(mutex_locked, NRF_ERROR_CRYPTO_BUSY);
 
-    cc310_backend_enable();
-
     crys_error = CRYS_ECEDW_Sign(p_signature,
                                  &signature_size,
                                  p_message,
@@ -89,8 +87,6 @@ ret_code_t nrf_crypto_backend_ed25519_sign(
                                  p_prv->key,
                                  sizeof(p_prv->key),
                                  &p_ctx->temp_data);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 
@@ -119,8 +115,6 @@ ret_code_t nrf_crypto_backend_ed25519_verify(
     mutex_locked = cc310_backend_mutex_trylock();
     VERIFY_TRUE(mutex_locked, NRF_ERROR_CRYPTO_BUSY);
 
-    cc310_backend_enable();
-
     crys_error = CRYS_ECEDW_Verify(p_signature,
                                    2 * CRYS_ECEDW_ORD_SIZE_IN_BYTES,
                                    p_pub->key,
@@ -128,8 +122,6 @@ ret_code_t nrf_crypto_backend_ed25519_verify(
                                    (uint8_t *)p_message,
                                    message_size,
                                    &p_ctx->temp_data);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -113,7 +113,7 @@ ret_code_t nrf_ble_qwr_value_get(nrf_ble_qwr_t * p_qwr,
     uint16_t handle     = BLE_GATT_HANDLE_INVALID;
     uint16_t val_len    = 0;
     uint16_t val_offset = 0;
-    uint16_t cur_len    = 0;
+    uint32_t cur_len    = 0;
 
     do
     {

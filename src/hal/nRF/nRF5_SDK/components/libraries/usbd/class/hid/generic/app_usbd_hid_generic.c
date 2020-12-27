@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -644,6 +644,7 @@ const app_usbd_hid_methods_t app_usbd_hid_generic_methods = {
     .on_set_report              = hid_generic_on_set_report,
     .ep_transfer_in             = hid_generic_ep_transfer_in,
     .ep_transfer_out            = hid_generic_ep_transfer_out,
+    .subclass_count             = hid_generic_get_class_descriptors_count,
     .subclass_length            = hid_generic_get_class_descriptors_length,
     .subclass_data              = hid_generic_get_class_descriptors_data,
     .on_idle                    = hid_generic_on_idle,

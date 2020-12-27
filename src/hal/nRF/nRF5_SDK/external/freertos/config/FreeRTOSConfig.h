@@ -93,7 +93,7 @@
 #define configMAX_CO_ROUTINE_PRIORITIES                                           ( 2 )
 
 /* Software timer definitions. */
-#define configUSE_TIMERS                                                          1
+#define configUSE_TIMERS                                                          0
 #define configTIMER_TASK_PRIORITY                                                 ( 2 )
 #define configTIMER_QUEUE_LENGTH                                                  32
 #define configTIMER_TASK_STACK_DEPTH                                              ( 80 )
@@ -110,7 +110,7 @@
 #endif
 
 /* FreeRTOS MPU specific definitions. */
-#define configINCLUDE_APPLICATION_DEFINED_PRIVILEGED_FUNCTIONS                    0
+#define configINCLUDE_APPLICATION_DEFINED_PRIVILEGED_FUNCTIONS                    1
 
 /* Optional functions - most linkers will remove unused functions anyway. */
 #define INCLUDE_vTaskPrioritySet                                                  1

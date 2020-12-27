@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -945,11 +945,6 @@ static void spi_handler(nrf_drv_spi_evt_t const * p_event,
                 evt.result    = exit_code;
                 m_cb.state.op = SDC_OP_IDLE;
                 SDC_CS_DEASSERT();
-                if (exit_code != SDC_SUCCESS)
-                {
-                    // Initialization process failed. Roll back to uninitialized state.
-                    APP_ERROR_CHECK(app_sdc_uninit());
-                }
                 sdc_spi_hispeed();
                 m_cb.handler(&evt);
             }

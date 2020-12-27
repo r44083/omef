@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -951,6 +951,7 @@ ret_code_t pm_peer_new(pm_peer_id_t           * p_new_peer_id,
 
         // NRF_ERROR_STORAGE_FULL, if no space in flash.
         // NRF_ERROR_BUSY,         if flash filesystem was busy.
+        // NRF_ERROR_INVALID_ADDR, if bonding data is unaligned.
         // NRF_ERROR_INTENRAL,     on internal error.
         return err_code;
     }

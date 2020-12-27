@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2010 - 2018, Nordic Semiconductor ASA
+Copyright (c) 2010 - 2020, Nordic Semiconductor ASA
 
 All rights reserved.
 
@@ -54,6 +54,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define POWER_FEATURE_RAM_REGISTERS_PRESENT
 #define POWER_FEATURE_RAM_REGISTERS_COUNT       3
 
+/* Non-Volatile Memory Controller */
+#define NVMC_PRESENT
+#define NVMC_COUNT 1
+
 /* Systick timer */
 #define SYSTICK_PRESENT
 #define SYSTICK_COUNT 1
@@ -68,6 +72,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define P0_PIN_NUM 32
 
+#define P0_FEATURE_PINS_PRESENT 0xFFFFFFFFUL
+
 /* MPU and BPROT */
 #define BPROT_PRESENT
 
@@ -79,6 +85,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RADIO_COUNT 1
 
 #define RADIO_EASYDMA_MAXCNT_SIZE 8
+
+#define RADIO_TXPOWER_TXPOWER_Max RADIO_TXPOWER_TXPOWER_Pos4dBm
 
 /* Accelerated Address Resolver */
 #define AAR_PRESENT
@@ -143,11 +151,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Serial Peripheral Interface Master */
 #define SPI_PRESENT
-#define SPI_COUNT 2
+#define SPI_COUNT 1
 
 /* Serial Peripheral Interface Master with DMA */
 #define SPIM_PRESENT
-#define SPIM_COUNT 2
+#define SPIM_COUNT 1
 
 #define SPIM0_MAX_DATARATE  8
 #define SPIM1_MAX_DATARATE  8
@@ -166,7 +174,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Serial Peripheral Interface Slave with DMA*/
 #define SPIS_PRESENT
-#define SPIS_COUNT 2
+#define SPIS_COUNT 1
 
 #define SPIS0_EASYDMA_MAXCNT_SIZE 14
 #define SPIS1_EASYDMA_MAXCNT_SIZE 14
@@ -196,6 +204,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define UARTE_COUNT 1
 
 #define UARTE0_EASYDMA_MAXCNT_SIZE 14
+
+/* Quadrature Decoder */
+#define QDEC_PRESENT
+#define QDEC_COUNT 1
 
 /* Successive Approximation Analog to Digital Converter */
 #define SAADC_PRESENT

@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /** @file tile_gap_driver.h
@@ -29,6 +28,10 @@
 #define TILE_GAP_DRIVER_H_
 
 #include <stdint.h>
+
+#define TILE_SERVICE_DATA_VERSION_0 0
+#define TILE_SERVICE_DATA_VERSION_2 2
+
 
 
 /**
@@ -93,5 +96,19 @@ int tile_gap_disconnected(void);
  */
 int tile_gap_params_updated(struct tile_conn_params *conn_params);
 
+/***************************************************************************************
+ * @brief Get the advertising parameters to use from TileLib.
+ *
+ * @param[out] adv_interval             pointer to write the Advertising Interval.
+ * @param[out] tile_service_uuid        pointer to write the Service UUID to put in the list of 16-bit UUIDs and Service Data.
+ * @param[out] tile_service_data_length pointer to write the Service Data length.
+ * @param[out] tile_service_data        pointer to write the Service Data. The required minimum available buffer size is TILE_SERVICE_DATA_MAX_LENGTH.
+ * @param[out] manuf                    pointer to indicate whether munufacturing data is available.
+ *
+ * @return See @ref TILE_ERROR_CODES.
+ *
+ ****************************************************************************************
+ */
+int tile_gap_get_adv_params(uint16_t* adv_interval, uint16_t* tile_service_uuid, uint8_t* tile_service_data_length, uint8_t* tile_service_data, uint8_t* manuf);
 
 #endif

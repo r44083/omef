@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -42,6 +42,14 @@
 #include "app_gpiote.h"
 #include "nrf_bitmask.h"
 #define MODULE_INITIALIZED (mp_users != NULL) /**< Macro designating whether the module has been initialized properly. */
+
+#if (GPIO_COUNT == 1)
+#define MAX_PIN_NUMBER 32
+#elif (GPIO_COUNT == 2)
+#define MAX_PIN_NUMBER (32 + P1_PIN_NUM)
+#else
+#error "Not supported."
+#endif
 
 /**@brief GPIOTE user type. */
 typedef struct
@@ -158,7 +166,7 @@ uint32_t app_gpiote_user_register(app_gpiote_user_id_t     * p_user_id,
     uint32_t i;
     const nrf_drv_gpiote_in_config_t config = GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
 
-    uint32_t num_of_pins = NUMBER_OF_PINS ;
+    uint32_t num_of_pins = MAX_PIN_NUMBER;
     for (i = 0; i < num_of_pins; i++)
     {
         if (nrf_bitmask_bit_is_set(i, user_pin_mask) &&
@@ -293,7 +301,7 @@ static uint32_t user_enable(app_gpiote_user_id_t user_id, bool enable)
     if (ret_code == NRF_SUCCESS)
     {
         uint32_t i;
-        for (i = 0; i < NUMBER_OF_PINS; i++)
+        for (i = 0; i < MAX_PIN_NUMBER; i++)
         {
             if (nrf_bitmask_bit_is_set(i, mp_users[user_id].pins_mask))
             {

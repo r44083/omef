@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -1044,8 +1044,13 @@ static void nrf_ble_scan_default_param_set(nrf_ble_scan_t * const p_scan_ctx)
 {
     // Set the default parameters.
     p_scan_ctx->scan_params.active        = 1;
+#if (NRF_SD_BLE_API_VERSION > 7)
+    p_scan_ctx->scan_params.interval_us   = NRF_BLE_SCAN_SCAN_INTERVAL * UNIT_0_625_MS;
+    p_scan_ctx->scan_params.window_us     = NRF_BLE_SCAN_SCAN_WINDOW * UNIT_0_625_MS;
+#else
     p_scan_ctx->scan_params.interval      = NRF_BLE_SCAN_SCAN_INTERVAL;
     p_scan_ctx->scan_params.window        = NRF_BLE_SCAN_SCAN_WINDOW;
+#endif // #if (NRF_SD_BLE_API_VERSION > 7)
     p_scan_ctx->scan_params.timeout       = NRF_BLE_SCAN_SCAN_DURATION;
     p_scan_ctx->scan_params.filter_policy = BLE_GAP_SCAN_FP_ACCEPT_ALL;
     p_scan_ctx->scan_params.scan_phys     = BLE_GAP_PHY_1MBPS;
@@ -1093,30 +1098,6 @@ static void nrf_ble_scan_on_timeout(nrf_ble_scan_t const * const p_scan_ctx,
 
             p_scan_ctx->evt_handler(&scan_evt);
         }
-    }
-}
-
-
-/**@brief Function for calling the BLE_GAP_EVT_SCAN_REQ_REPORT event.
- *
- * @param[in] p_scan_ctx  Pointer to the Scanning Module instance.
- * @param[in] p_gap       GAP event structure.
- */
-static void nrf_ble_scan_on_req_report(nrf_ble_scan_t const * const p_scan_ctx,
-                                       ble_gap_evt_t  const * const p_gap)
-{
-    ble_gap_evt_scan_req_report_t const * p_req_report = &p_gap->params.scan_req_report;
-    scan_evt_t                            scan_evt;
-
-    memset(&scan_evt, 0, sizeof(scan_evt));
-
-    if (p_scan_ctx->evt_handler != NULL)
-    {
-        scan_evt.scan_evt_id       = NRF_BLE_SCAN_EVT_SCAN_REQ_REPORT;
-        scan_evt.p_scan_params     = &p_scan_ctx->scan_params;
-        scan_evt.params.req_report = *p_req_report;
-
-        p_scan_ctx->evt_handler(&scan_evt);
     }
 }
 
@@ -1307,11 +1288,6 @@ void nrf_ble_scan_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_contex)
 
         case BLE_GAP_EVT_TIMEOUT:
             nrf_ble_scan_on_timeout(p_scan_data, p_gap_evt);
-            break;
-
-        case BLE_GAP_EVT_SCAN_REQ_REPORT:
-            nrf_ble_scan_on_req_report(p_scan_data, p_gap_evt);
-
             break;
 
         case BLE_GAP_EVT_CONNECTED:

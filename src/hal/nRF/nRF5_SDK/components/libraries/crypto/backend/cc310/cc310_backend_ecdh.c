@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -103,15 +103,11 @@ ret_code_t nrf_crypto_backend_cc310_ecdh_compute(
         return NRF_ERROR_CRYPTO_BUSY;
     }
 
-    cc310_backend_enable();
-
     crys_error = CRYS_ECDH_SVDP_DH(&p_pub->key.cc310_public_key,
                                    &p_prv->private_key,
                                    p_output_buffer,
                                    &shared_secret_size,
                                    &p_ctx->temp_data);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 
@@ -161,8 +157,6 @@ ret_code_t nrf_crypto_backend_cc310_curve25519_ecdh_compute(
         return NRF_ERROR_CRYPTO_BUSY;
     }
 
-    cc310_backend_enable();
-
     crys_error = CRYS_ECMONT_Scalarmult(p_shared_secret,
                                         &shared_secret_size,
                                         p_prv->key,
@@ -170,8 +164,6 @@ ret_code_t nrf_crypto_backend_cc310_curve25519_ecdh_compute(
                                         p_pub->key,
                                         pub_key_size,
                                         &p_ctx->temp_data);
-
-    cc310_backend_disable();
 
     cc310_backend_mutex_unlock();
 

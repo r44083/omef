@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -113,7 +113,7 @@ static const char * sd_events[] = {
     "BLE_GATTC_EVT_HVX",                       /*0x39*/
     "BLE_GATTC_EVT_EXCHANGE_MTU_RSP",          /*0x3a*/
     "BLE_GATTC_EVT_TIMEOUT",                   /*0x3b*/
-    "SD_EVT_UNKNOWN",                          /*0x3c*/
+    "BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE",     /*0x3c*/
     "SD_EVT_UNKNOWN",                          /*0x3d*/
     "SD_EVT_UNKNOWN",                          /*0x3e*/
     "SD_EVT_UNKNOWN",                          /*0x3f*/
@@ -140,6 +140,7 @@ static const char * sd_events[] = {
     "BLE_GATTS_EVT_SC_CONFIRM",                /*0x54*/
     "BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST",      /*0x55*/
     "BLE_GATTS_EVT_TIMEOUT",                   /*0x56*/
+    "BLE_GATTS_EVT_HVN_TX_COMPLETE",           /*0x57*/
 };
 
 static const char * sd_functions[] = {
@@ -154,7 +155,7 @@ static const char * sd_functions[] = {
     "SD_BLE_OPT_SET",                          /*0x67*/
     "SD_BLE_OPT_GET",                          /*0x68*/
     "SD_BLE_CFG_SET",                          /*0x69*/
-    "SD_UNKNOWN",                              /*0x6A*/
+    "SD_BLE_UUID_VS_REMOVE",                   /*0x6A*/
     "SD_UNKNOWN",                              /*0x6B*/
     "SD_BLE_GAP_ADDR_SET"                ,     /*0x6C*/
     "SD_BLE_GAP_ADDR_GET"                ,     /*0x6D*/
@@ -267,20 +268,19 @@ const char * ser_dbg_sd_call_str_get(uint8_t opcode)
         p_str = string[0];
     }
 #endif // ANT_STACK_SUPPORT_REQD
-    else
+    
+    switch (opcode)
     {
-        switch (opcode)
-        {
-            case SD_ECB_BLOCK_ENCRYPT:
-                p_str = "SD_ECB_BLOCK_ENCRYPT";
-                break;
-            case SD_TEMP_GET:
-                p_str = "SD_TEMP_GET";
-                break;
-            default:
-                break;
-        }
+        case SD_ECB_BLOCK_ENCRYPT:
+            p_str = "SD_ECB_BLOCK_ENCRYPT";
+            break;
+        case SD_TEMP_GET:
+            p_str = "SD_TEMP_GET";
+            break;
+        default:
+            break;
     }
+
     return p_str;
 #else
     return NULL;

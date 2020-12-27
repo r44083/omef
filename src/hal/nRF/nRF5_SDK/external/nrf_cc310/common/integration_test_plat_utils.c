@@ -84,9 +84,9 @@ SaSiError_t integration_tests_setup(void)
 
     INTEG_TEST_PRINT("==================== TEST START ====================\r\n");
 
-    NVIC_EnableIRQ(CRYPTOCELL_IRQn);
+    //NVIC_EnableIRQ(CRYPTOCELL_IRQn);
 
-    NRF_CRYPTOCELL->ENABLE = 1;
+    //NRF_CRYPTOCELL->ENABLE = 1;
 
     return ret;
 }

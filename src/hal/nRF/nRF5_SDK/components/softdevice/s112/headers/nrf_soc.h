@@ -177,6 +177,10 @@ enum NRF_SOC_SVCS
   SD_RADIO_REQUEST                        = SOC_SVC_BASE_NOT_AVAILABLE + 30,
   SD_EVT_GET                              = SOC_SVC_BASE_NOT_AVAILABLE + 31,
   SD_TEMP_GET                             = SOC_SVC_BASE_NOT_AVAILABLE + 32,
+  SD_POWER_USBPWRRDY_ENABLE               = SOC_SVC_BASE_NOT_AVAILABLE + 33,
+  SD_POWER_USBDETECTED_ENABLE             = SOC_SVC_BASE_NOT_AVAILABLE + 34,
+  SD_POWER_USBREMOVED_ENABLE              = SOC_SVC_BASE_NOT_AVAILABLE + 35,
+  SD_POWER_USBREGSTATUS_GET               = SOC_SVC_BASE_NOT_AVAILABLE + 36,
   SVC_SOC_LAST                            = SOC_SVC_BASE_NOT_AVAILABLE + 37
 };
 
@@ -314,6 +318,9 @@ enum NRF_SOC_EVTS
   NRF_EVT_RADIO_SIGNAL_CALLBACK_INVALID_RETURN, /**< Event indicating that a radio timeslot signal callback handler return was invalid. */
   NRF_EVT_RADIO_SESSION_IDLE,                   /**< Event indicating that a radio timeslot session is idle. */
   NRF_EVT_RADIO_SESSION_CLOSED,                 /**< Event indicating that a radio timeslot session is closed. */
+  NRF_EVT_POWER_USB_POWER_READY,                /**< Event indicating that a USB 3.3 V supply is ready. */
+  NRF_EVT_POWER_USB_DETECTED,                   /**< Event indicating that voltage supply is detected on VBUS. */
+  NRF_EVT_POWER_USB_REMOVED,                    /**< Event indicating that voltage supply is removed from VBUS. */
   NRF_EVT_NUMBER_OF_EVTS
 };
 
@@ -508,6 +515,54 @@ SVCALL(SD_POWER_SYSTEM_OFF, uint32_t, sd_power_system_off(void));
  */
 SVCALL(SD_POWER_POF_ENABLE, uint32_t, sd_power_pof_enable(uint8_t pof_enable));
 
+/**@brief Enables or disables the USB power ready event.
+ *
+ * Enabling this will give a SoftDevice event (NRF_EVT_POWER_USB_POWER_READY) when a USB 3.3 V supply is ready.
+ * The event can be retrieved with sd_evt_get();
+ *
+ * @param[in] usbpwrrdy_enable    True if the power ready event should be enabled, false if it should be disabled.
+ *
+ * @note Calling this function on a chip without USBD peripheral will result in undefined behaviour.
+ *
+ * @retval ::NRF_SUCCESS
+ */
+SVCALL(SD_POWER_USBPWRRDY_ENABLE, uint32_t, sd_power_usbpwrrdy_enable(uint8_t usbpwrrdy_enable));
+
+/**@brief Enables or disables the power USB-detected event.
+ *
+ * Enabling this will give a SoftDevice event (NRF_EVT_POWER_USB_DETECTED) when a voltage supply is detected on VBUS.
+ * The event can be retrieved with sd_evt_get();
+ *
+ * @param[in] usbdetected_enable    True if the power ready event should be enabled, false if it should be disabled.
+ *
+ * @note Calling this function on a chip without USBD peripheral will result in undefined behaviour.
+ *
+ * @retval ::NRF_SUCCESS
+ */
+SVCALL(SD_POWER_USBDETECTED_ENABLE, uint32_t, sd_power_usbdetected_enable(uint8_t usbdetected_enable));
+
+/**@brief Enables or disables the power USB-removed event.
+ *
+ * Enabling this will give a SoftDevice event (NRF_EVT_POWER_USB_REMOVED) when a voltage supply is removed from VBUS.
+ * The event can be retrieved with sd_evt_get();
+ *
+ * @param[in] usbremoved_enable    True if the power ready event should be enabled, false if it should be disabled.
+ *
+ * @note Calling this function on a chip without USBD peripheral will result in undefined behaviour.
+ *
+ * @retval ::NRF_SUCCESS
+ */
+SVCALL(SD_POWER_USBREMOVED_ENABLE, uint32_t, sd_power_usbremoved_enable(uint8_t usbremoved_enable));
+
+/**@brief Get USB supply status register content.
+ *
+ * @param[out] usbregstatus    The content of USBREGSTATUS register.
+ *
+ * @note Calling this function on a chip without USBD peripheral will result in undefined behaviour.
+ *
+ * @retval ::NRF_SUCCESS
+ */
+SVCALL(SD_POWER_USBREGSTATUS_GET, uint32_t, sd_power_usbregstatus_get(uint32_t * usbregstatus));
 
 /**@brief Sets the power failure comparator threshold value.
  *

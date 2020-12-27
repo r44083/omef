@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -1092,6 +1092,9 @@ static void gc_swap_pages(void)
     // Keep the offset for this page, but reset it for the swap.
     m_pages[m_gc.cur_page].write_offset = m_swap_page.write_offset;
     m_swap_page.write_offset            = FDS_PAGE_TAG_SIZE;
+
+    // Page has been garbage collected
+    m_pages[m_gc.cur_page].can_gc = false;
 }
 
 

@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /** @file tile_song_module.h
@@ -85,6 +84,19 @@ enum NOTES {
   C9, CS9, D9, DS9, E9, F9, FS9, G9, GS9, A9, AS9, B9,
 };
 
+/**
+ *  @brief TILE_SONG_DURATION
+ *          Duration to play the Tile Song for.
+ *          The duration is in seconds and here are special values.
+ */
+enum TILE_SONG_DURATION
+{
+  TILE_SONG_DURATION_NOPLAY   = 0x00, /**< Do not play anything */
+  TILE_SONG_DURATION_ONCE     = 0xFE, /**< Play the Song just once */
+  TILE_SONG_DURATION_FOREVER  = 0xFF  /**< Play the song forever, till someone stops it */
+};
+
+
 #define SONG_METADATA_SIZE (sizeof(struct song_metadata_t))
 #define SONG_INFO_SIZE (sizeof(struct song_hdr_info_t))
 #define SONG_SECURITY_SIZE (sizeof(struct song_hdr_sec_t))
@@ -106,7 +118,7 @@ enum NOTES {
 struct song_hdr_info_t
 {
   uint8_t  song_format;     ///< song_format is a Version Number that would describe the Tsong Format Variations
-  uint8_t  song_number;     ///< song_number describes what the Type of Song being Programmed and what song_number to use for playing the Song using @ref TOA_CMD_SONG command.
+  uint8_t  song_number;     ///< song_number describes what the Type of Song being Programmed and what song_number to use for playing the Song using TOA_CMD_SONG command.
   uint16_t song_id;         ///< song_id is the Tile Assigned ID Number of this Song. See @ref TILE_SONG
   uint16_t song_size;       ///< song_size represents the Song Payload Size, excluding any Security or Info Header.
 };
@@ -213,7 +225,7 @@ struct tile_song_module {
   /**
    * Play song with given index number with strength from 0-3.
    */
-  int (*play)(uint8_t number, uint8_t strength);
+  int (*play)(uint8_t number, uint8_t strength, uint8_t duration);
 
   /**
    * Stop all songs.
@@ -256,16 +268,6 @@ void song_block_done(uint8_t error);
  */
 void song_complete_done(uint8_t error);
 
-/**
- * Report song quality to Tile Lib.
- *
- * NOTE: This is optional.
- *
- * @param[in] quality The of the song. In order to work with the Tile quality
- *                    detection, this should rougly correspond to millivolt
- *                    drop on the battery when a note is played.
- */
-void song_quality(uint8_t quality);
 
  /** @} */
 

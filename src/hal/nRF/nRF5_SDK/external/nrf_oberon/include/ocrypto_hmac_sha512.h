@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2019 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -55,13 +55,13 @@
 #ifndef OCRYPTO_HMAC_SHA512_H
 #define OCRYPTO_HMAC_SHA512_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 #include "include/ocrypto_sha512.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Maximum key length.
@@ -90,7 +90,6 @@ typedef struct
  * for a given message.
  */
 /**@{*/
-
 
 /**
  * HMAC-SHA512 initialization.
@@ -139,9 +138,8 @@ void ocrypto_hmac_sha512_update(ocrypto_hmac_sha512_ctx * ctx,
  */
 void ocrypto_hmac_sha512_final(ocrypto_hmac_sha512_ctx * ctx,
                                uint8_t r[ocrypto_hmac_sha512_BYTES]);
+
 /**@}*/
-
-
 
 /**
  * HMAC-SHA512 algorithm.
@@ -166,6 +164,6 @@ void ocrypto_hmac_sha512(
 }
 #endif
 
-#endif
+#endif /* #ifndef OCRYPTO_HMAC_SHA512_H */
 
 /** @} */

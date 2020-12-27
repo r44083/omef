@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -138,6 +138,7 @@ bool pds_peer_data_iterate(pm_peer_data_id_t            data_id,
  *
  * @retval NRF_SUCCESS              If the operation was initiated successfully.
  * @retval NRF_ERROR_INVALID_PARAM  If @p peer_id or the data ID in @p_peer_data are invalid.
+ * @retval NRF_ERROR_INVALID_ADDR   If @p p_peer_data is not word-aligned.
  * @retval NRF_ERROR_STORAGE_FULL   If no space is available in flash.
  * @retval NRF_ERROR_BUSY           If the flash filesystem was busy.
  * @retval NRF_ERROR_INTERNAL       If an unexpected error occurred.

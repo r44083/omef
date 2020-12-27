@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2014 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -39,6 +39,7 @@
  */
 #include "sdk_common.h"
 #if NRF_MODULE_ENABLED(MEM_MANAGER)
+#include <stdio.h>
 #include "mem_manager.h"
 #include "nrf_assert.h"
 
@@ -483,7 +484,10 @@ static const uint32_t m_block_mem_start[BLOCK_CAT_COUNT] =
 static uint8_t  m_memory[TOTAL_MEMORY_SIZE];                                                        /**< Memory managed by the module. */
 static uint32_t m_mem_pool[BLOCK_BITMAP_ARRAY_SIZE];                                                /**< Bitmap used for book-keeping availability of all blocks managed by the module.  */
 
-#ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
+#if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
+
+uint8_t* mem_begin = &m_memory[0];
+uint8_t* mem_end = &m_memory[TOTAL_MEMORY_SIZE];
 
 /**@brief Lookup table for descriptive strings for each block category. */
 static const char * m_block_desc_str[BLOCK_CAT_COUNT] =
@@ -497,8 +501,7 @@ static const char * m_block_desc_str[BLOCK_CAT_COUNT] =
     "XXLarge"
 };
 
-/**@brief Table for book keeping smallest size allocated in each block range. */
-static uint32_t m_min_size[BLOCK_CAT_COUNT]  =
+static const uint32_t m_min_size_default[BLOC_CAT_COUNT] =
 {
     MEMORY_MANAGER_XXSMALL_BLOCK_SIZE,
     MEMORY_MANAGER_XSMALL_BLOCK_SIZE,
@@ -507,10 +510,19 @@ static uint32_t m_min_size[BLOCK_CAT_COUNT]  =
     MEMORY_MANAGER_LARGE_BLOCK_SIZE,
     MEMORY_MANAGER_XLARGE_BLOCK_SIZE,
     MEMORY_MANAGER_XXLARGE_BLOCK_SIZE
-};
+}
+
+/**@brief Table for book keeping smallest size allocated in each block range. */
+static uint32_t m_min_size[BLOCK_CAT_COUNT];
 
 /**@brief Table for book keeping largest size allocated in each block range. */
 static uint32_t m_max_size[BLOCK_CAT_COUNT];
+
+/**@brief Table for keeping the peak count in each block range. */
+static uint32_t m_peak_count[BLOCK_CAT_COUNT];
+
+/**@brief Table for keeping the current count in each block range. */
+static uint32_t m_cur_count[BLOCK_CAT_COUNT];
 
 /**@brief Global pointing to minimum size holder for block type being allocated. */
 static uint32_t * p_min_size;
@@ -559,21 +571,6 @@ static __INLINE void get_block_coordinates(uint32_t block_index, uint32_t * p_x,
 }
 
 
-/**@brief Initializes the block by setting it to be free. */
-static void block_init (uint32_t block_index)
-{
-    uint32_t x;
-    uint32_t y;
-
-    // Determine position of the block in the bitmap.
-    // X determines relevant word for the block. Y determines the actual bit in the word.
-    get_block_coordinates(block_index, &x, &y);
-
-    // Set bit related to the block to indicate that the block is free.
-    SET_BIT(m_mem_pool[x], y);
-}
-
-
 /**@brief Function to get the category of the block of size 'size' or block number 'block_index'.*/
 static __INLINE uint32_t get_block_cat(uint32_t size, uint32_t block_index)
 {
@@ -590,16 +587,39 @@ static __INLINE uint32_t get_block_cat(uint32_t size, uint32_t block_index)
     return 0;
 }
 
+/**@brief Initializes the block by setting it to be free. */
+static void block_init (uint32_t block_index)
+{
+    uint32_t x;
+    uint32_t y;
+
+    // Determine position of the block in the bitmap.
+    // X determines relevant word for the block. Y determines the actual bit in the word.
+    get_block_coordinates(block_index, &x, &y);
+
+#if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
+    // Update current use statistics: lower current count in block
+    if (!IS_SET(m_mem_pool[x], y))
+    {
+        uint32_t block_cat = get_block_cat(0, block_index);
+        m_cur_count[block_cat]--;
+    }
+#endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
+
+    // Set bit related to the block to indicate that the block is free.
+    SET_BIT(m_mem_pool[x], y);
+}
+
 
 /**@brief Function to get the size of the block number 'block_index'. */
 static __INLINE uint32_t get_block_size(uint32_t block_index)
 {
     const uint32_t block_cat = get_block_cat(0, block_index);
 
-    #ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
-        p_min_size = &m_min_size[block_cat];
-        p_max_size = &m_max_size[block_cat];
-    #endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
+#if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
+    p_min_size = &m_min_size[block_cat];
+    p_max_size = &m_max_size[block_cat];
+#endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
 
     return m_block_size[block_cat];
 }
@@ -630,6 +650,19 @@ static void block_allocate(uint32_t block_index)
     get_block_coordinates(block_index, &x, &y);
 
     CLR_BIT(m_mem_pool[x], y);
+
+#if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
+    // Update statistics: Add to current count in block.
+    uint32_t block_cat = get_block_cat(0, block_index);
+    m_cur_count[block_cat]++;
+
+    // Report if the peak usage goes up in current block
+    if (m_cur_count[block_cat] > m_peak_count[block_cat])
+    {
+        NRF_LOG_INFO("%d: %d -> %d", block_cat, m_peak_count[block_cat], m_cur_count[block_cat]);
+        m_peak_count[block_cat] = m_cur_count[block_cat];
+    }
+#endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
 }
 
 
@@ -648,13 +681,13 @@ uint32_t nrf_mem_init(void)
         block_init(block_index);
     }
 
+    NRF_MEM_MANAGER_DIAGNOSE_RESET
+
 #if (MEM_MANAGER_DISABLE_API_PARAM_CHECK == 0)
     m_module_initialized = true;
 #endif // MEM_MANAGER_DISABLE_API_PARAM_CHECK
 
-#ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
-    nrf_mem_diagnose();
-#endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
+    NRF_MEM_MANAGER_DIAGNOSE
 
     MM_MUTEX_UNLOCK();
 
@@ -704,10 +737,10 @@ uint32_t nrf_mem_reserve(uint8_t ** pp_buffer, uint32_t * p_size)
             (*pp_buffer) = &m_memory[memory_index];
             (*p_size)    = block_size;
 
-            #ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
-                (*p_min_size) = MIN((*p_min_size), requested_size);
-                (*p_max_size) = MAX((*p_max_size), requested_size);
-            #endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
+        #if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
+            (*p_min_size) = MIN((*p_min_size), requested_size);
+            (*p_max_size) = MAX((*p_max_size), requested_size);
+        #endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
 
             break;
         }
@@ -715,14 +748,12 @@ uint32_t nrf_mem_reserve(uint8_t ** pp_buffer, uint32_t * p_size)
     }
     if (err_code != NRF_SUCCESS)
     {
-        NRF_LOG_DEBUG("Memory reservation result %d, memory %p, size %d!",
+        NRF_LOG_ERROR("Memory reservation failed: err_code %d, memory %p, size %d!",
                 err_code,
                 (uint32_t)(*pp_buffer),
                 (*p_size));
 
-        #ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
-        nrf_mem_diagnose();
-        #endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
+        NRF_MEM_MANAGER_DIAGNOSE
     }
 
     MM_MUTEX_UNLOCK();
@@ -743,6 +774,7 @@ void * nrf_malloc(uint32_t size)
 
     if (retval != NRF_SUCCESS)
     {
+        NRF_LOG_ERROR("Failed to malloc side: %d", size);
         buffer = NULL;
     }
 
@@ -765,7 +797,7 @@ void * nrf_calloc(uint32_t count, uint32_t size)
     }
     else
     {
-        NRF_LOG_DEBUG("[%s]: Failed to allocate memory %d", (uint32_t)__func__, allocated_size);
+        NRF_LOG_ERROR("[%s]: Failed to allocate memory %d", (uint32_t)__func__, allocated_size);
         buffer = NULL;
     }
 
@@ -810,7 +842,7 @@ void * nrf_realloc(void * p_mem, uint32_t size)
 }
 
 
-#ifdef MEM_MANAGER_ENABLE_DIAGNOSTICS
+#if defined(MEM_MANAGER_ENABLE_DIAGNOSTICS) && (MEM_MANAGER_ENABLE_DIAGNOSTICS == 1)
 
 /**@brief Function to format and print information with respect to each block.
  *
@@ -824,7 +856,7 @@ void * nrf_realloc(void * p_mem, uint32_t size)
 void print_block_info(uint32_t block_cat, uint32_t * p_mem_in_use)
 {
     #define PRINT_COLUMN_WIDTH      13
-    #define PRINT_BUFFER_SIZE       80
+    #define PRINT_BUFFER_SIZE       100
     #define ASCII_VALUE_FOR_SPACE   32
 
     char           print_buffer[PRINT_BUFFER_SIZE];
@@ -858,31 +890,37 @@ void print_block_info(uint32_t block_cat, uint32_t * p_mem_in_use)
         snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
                  PRINT_COLUMN_WIDTH,
                  "| %d",
-                 m_block_size[block_cat]);
+                 (int)m_block_size[block_cat]);
 
         column_number++;
         snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
                  PRINT_COLUMN_WIDTH,
                  "| %d",
-                 m_block_count[block_cat]);
+                 (int)m_block_count[block_cat]);
 
         column_number++;
         snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
                  PRINT_COLUMN_WIDTH,
                  "| %d",
-                 num_of_blocks);
+                 (int)num_of_blocks);
 
         column_number++;
         snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
                  PRINT_COLUMN_WIDTH,
                  "| %d",
-                 m_min_size[block_cat]);
+                 (int)m_min_size[block_cat]);
 
         column_number++;
         snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
                  PRINT_COLUMN_WIDTH,
                  "| %d",
-                 m_max_size[block_cat]);
+                 (int)m_max_size[block_cat]);
+
+        column_number++;
+        snprintf(&print_buffer[column_number * PRINT_COLUMN_WIDTH],
+                 PRINT_COLUMN_WIDTH,
+                 "| %d",
+                 (int)m_max_count[block_cat]);
 
         column_number++;
         const uint32_t column_end = (column_number * PRINT_COLUMN_WIDTH);
@@ -896,7 +934,7 @@ void print_block_info(uint32_t block_cat, uint32_t * p_mem_in_use)
         }
         snprintf(&print_buffer[column_end], 2, "|");
 
-        NRF_LOG_BYTES_DEBUG(print_buffer, strlen(print_buffer));
+        NRF_LOG_INFO("%s", print_buffer);
 
         (*p_mem_in_use) += in_use;
     }
@@ -907,10 +945,10 @@ void nrf_mem_diagnose(void)
 {
     uint32_t in_use = 0;
 
-    NRF_LOG_DEBUG("");
-    NRF_LOG_DEBUG("+------------+------------+------------+------------+------------+------------+");
-    NRF_LOG_DEBUG("| Block      | Size       | Total      | In Use     | Min Alloc  | Max Alloc  |");
-    NRF_LOG_DEBUG("+------------+------------+------------+------------+------------+------------+");
+    NRF_LOG_INFO("");
+    NRF_LOG_INFO("+------------+------------+------------+------------+------------+------------+");
+    NRF_LOG_INFO("| Block      | Size       | Total      | In Use     | Min Alloc  | Max Alloc  |");
+    NRF_LOG_INFO("+------------+------------+------------+------------+------------+------------+");
 
     print_block_info(BLOCK_CAT_XXS, &in_use);
     print_block_info(BLOCK_CAT_XS, &in_use);
@@ -920,12 +958,22 @@ void nrf_mem_diagnose(void)
     print_block_info(BLOCK_CAT_XL, &in_use);
     print_block_info(BLOCK_CAT_XXL, &in_use);
 
-    NRF_LOG_DEBUG("+------------+------------+------------+------------+------------+------------+");
-    NRF_LOG_DEBUG("| Total      | %d      | %d        | %d",
+    NRF_LOG_INFO("+------------+------------+------------+------------+------------+------------+");
+    NRF_LOG_INFO("| Total      | %d      | %d        | %d",
             TOTAL_MEMORY_SIZE, TOTAL_BLOCK_COUNT,in_use);
-    NRF_LOG_DEBUG("+------------+------------+------------+------------+------------+------------+");
+    NRF_LOG_INFO("+------------+------------+------------+------------+------------+------------+");
+}
+
+
+void nrf_mem_diagnose_reset(void)
+{
+    memcpy(&m_min_size, &m_min_size_default, sizeof(m_min_size));
+    memset(&m_max_size, 0, sizeof(m_max_size));
+    memset(&m_peak_count, 0, sizeof(m_max_count));
+    memset(&m_cur_count, 0, sizeof(m_cur_count));
 }
 
 #endif // MEM_MANAGER_ENABLE_DIAGNOSTICS
 /** @} */
 #endif //NRF_MODULE_ENABLED(MEM_MANAGER)
+

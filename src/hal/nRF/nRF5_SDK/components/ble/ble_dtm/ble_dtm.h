@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2012 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -56,6 +56,7 @@
 extern "C" {
 #endif
 
+#define DTM_MAX_ANTENNA_CNT 0x13 /**< Maximum supported antenna count. */
 
 /**@brief Configuration parameters. */
 #define DTM_BITRATE                     UARTE_BAUDRATE_BAUDRATE_Baud19200   /**< Serial bitrate on the UART */
@@ -76,17 +77,80 @@ typedef uint32_t dtm_cmd_t;                                                 /**<
 #define LE_TRANSMITTER_TEST             2                                   /**< DTM command: Start transmission test. */
 #define LE_TEST_END                     3                                   /**< DTM command: End test and send packet report. */
 
-#define LE_TEST_SETUP_RESET             0                                   /**< DTM command parameter: Stop TX/RX, reset the packet length upper bits and set the PHY to 1Mbit. */
-#define LE_TEST_SETUP_SET_UPPER         1                                   /**< DTM command parameter: Set the upper two bits of the length field. */
-#define LE_TEST_SETUP_SET_PHY           2                                   /**< DTM command parameter: Select the PHY to be used for packets. */
-#define LE_TEST_SETUP_SELECT_MODULATION 3                                   /**< DTM command parameter: Select standard or stable modulation index. Stable modulation index is not supported. */
-#define LE_TEST_SETUP_READ_SUPPORTED    4                                   /**< DTM command parameter: Read the supported test case features. */
-#define LE_TEST_SETUP_READ_MAX          5                                   /**< DTM command parameter: Read the max supported time and length for packets. */
+#define LE_TEST_SETUP_RESET              0                                  /**< DTM command control: Stop TX/RX, reset the packet length upper bits and set the PHY to 1Mbit. */
+#define LE_TEST_SETUP_SET_UPPER          1                                  /**< DTM command control: Set the upper two bits of the length field. */
+#define LE_TEST_SETUP_SET_PHY            2                                  /**< DTM command control: Select the PHY to be used for packets. */
+#define LE_TEST_SETUP_SELECT_MODULATION  3                                  /**< DTM command control: Select standard or stable modulation index. Stable modulation index is not supported. */
+#define LE_TEST_SETUP_READ_SUPPORTED     4                                  /**< DTM command control: Read the supported test case features. */
+#define LE_TEST_SETUP_READ_MAX           5                                  /**< DTM command control: Read the max supported time and length for packets. */
+#define LE_TEST_SETUP_CONSTANT_TONE      6                                  /**< DTM command control: Constant Tone Extension info. */
+#define LE_TEST_SETUP_CONSTANT_TONE_SLOT 7                                  /**< DTM command control: Constant Tone Extension slot. */
+#define LE_TEST_SETUP_ANTENNA_ARRAY      8                                  /**< DTM command control: Antenna number and switch patern. */
+#define LE_TEST_SETUP_TRANSMIT_POWER     9                                  /**< DTM command control: Transmit power set. */
 
-#define LE_PHY_1M                       1                                   /**< DTM command parameter: Set PHY for future packets to use 1MBit PHY. */
-#define LE_PHY_2M                       2                                   /**< DTM command parameter: Set PHY for future packets to use 2MBit PHY. */
-#define LE_PHY_LE_CODED_S8              3                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=8. */
-#define LE_PHY_LE_CODED_S2              4                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=2 */
+#define LE_RESET_MIN_RANGE 0x00                                             /**< DTM command parameter: Reset. Minimum parameter value. */
+#define LE_RESET_MAX_RANGE 0x03                                             /**< DTM command parameter: Reset. Maximum parameter value. */
+
+#define LE_SET_UPER_BITS_MIN_RANGE 0x00                                     /**< DTM command parameter: Set upper bits. Minimum parameter value. */
+#define LE_SET_UPER_BITS_MAX_RANGE 0x0F                                     /**< DTM command parameter: Set upper bits. Maximum parameter value. */
+
+#define LE_PHY_1M_MIN_RANGE          0x04                                   /**< DTM command parameter: Set PHY for future packets to use 1MBit PHY. Minimum parameter value. */
+#define LE_PHY_1M_MAX_RANGE          0x07                                   /**< DTM command parameter: Set PHY for future packets to use 1MBit PHY. Maximum parameter value. */
+#define LE_PHY_2M_MIN_RANGE          0x08                                   /**< DTM command parameter: Set PHY for future packets to use 2MBit PHY. Minimum parameter value. */
+#define LE_PHY_2M_MAX_RANGE          0x0B                                   /**< DTM command parameter: Set PHY for future packets to use 2MBit PHY. Maximum parameter value. */
+#define LE_PHY_LE_CODED_S8_MIN_RANGE 0x0C                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=8. Minimum parameter value. */
+#define LE_PHY_LE_CODED_S8_MAX_RANGE 0x0F                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=8. Maximum parameter value. */
+#define LE_PHY_LE_CODED_S2_MIN_RANGE 0x10                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=2. Minimum parameter value. */
+#define LE_PHY_LE_CODED_S2_MAX_RANGE 0x13                                   /**< DTM command parameter: Set PHY for future packets to use coded PHY with S=2. Maximum parameter value. */
+
+#define LE_MODULATION_INDEX_STANDARD_MIN_RANGE 0x00                         /**< DTM command parameter: Set Modulation index to stadard. Minimum parameter value. */
+#define LE_MODULATION_INDEX_STANDARD_MAX_RANGE 0x03                         /**< DTM command parameter: Set Modulation index to stadard. Maximum parameter value. */
+#define LE_MODULATION_INDEX_STABLE_MIN_RANGE   0x04                         /**< DTM command parameter: Set Modulation index to stable. Minimum parameter value. */
+#define LE_MODULATION_INDEX_STABLE_MAX_RANGE   0x07                         /**< DTM command parameter: Set Modulation index to stable. Maximum parameter value. */
+
+#define LE_TEST_FEATURE_READ_MIN_RANGE 0x00                                 /**< DTM command parameter: Read test case supported feature. Minimum parameter value. */
+#define LE_TEST_FEATURE_READ_MAX_RANGE 0x03                                 /**< DTM command parameter: Read test case supported feature. Maximum parameter value. */
+
+#define LE_TEST_SUPPORTED_TX_OCTETS_MIN_RANGE 0x00                          /**< DTM command parameter: Read maximum supported Tx Octets. Minimum parameter value. */
+#define LE_TEST_SUPPORTED_TX_OCTETS_MAX_RANGE 0x03                          /**< DTM command parameter: Read maximum supported Tx Octets. Maximum parameter value. */
+#define LE_TEST_SUPPORTED_TX_TIME_MIN_RANGE   0x04                          /**< DTM command parameter: Read maximum supported Tx Time. Minimum parameter value. */
+#define LE_TEST_SUPPORTED_TX_TIME_MAX_RANGE   0x07                          /**< DTM command parameter: Read maximum supported Tx Time. Maximum parameter value. */
+#define LE_TEST_SUPPORTED_RX_OCTETS_MIN_RANGE 0x08                          /**< DTM command parameter: Read maximum supported Rx Octets. Minimum parameter value. */
+#define LE_TEST_SUPPORTED_RX_OCTETS_MAX_RANGE 0x0B                          /**< DTM command parameter: Read maximum supported Rx Octets. Maximum parameter value. */
+#define LE_TEST_SUPPORTED_RX_TIME_MIN_RANGE   0x0C                          /**< DTM command parameter: Read maximum supported Rx Time. Minimum parameter value. */
+#define LE_TEST_SUPPORTED_RX_TIME_MAX_RANGE   0x0F                          /**< DTM command parameter: Read maximum supported Rx Time. Maximum parameter value. */
+#define LE_TEST_SUPPORTED_CTE_LENGTH          0x10                          /**< DTM command parameter: Read maximum length of the Constant Tone Extension supported. */
+
+#define LE_UPPER_BITS_MASK 0x0C                                             /**< DTM command parameter: Upper bits mask. */
+#define LE_UPPER_BITS_POS 0x04                                              /**< DTM command parameter: Upper bits position. */
+
+#define LE_TRANSMIT_POWER_LVL_MIN           -127                            /**< DTM command parameter: Minimum supported transmit power level. */
+#define LE_TRANSMIT_POWER_LVL_MAX           20                              /**< DTM command parameter: Maximum supported transmit power level. */
+#define LE_TRANSMIT_POWER_LVL_SET_MIN       0x7E                            /**< DTM command parameter: Set minimum transmit power level. */
+#define LE_TRANSMIT_POWER_LVL_SET_MAX       0x7F                            /**< DTM command parameter: Set maximum  taranmit poer level. */
+
+#define LE_TRANSMIT_POWER_RESPONSE_LVL_POS  (0x01)                         /** Position of power level in the DTM power level set response. */ 
+#define LE_TRANSMIT_POWER_RESPONSE_LVL_MASK (0x1FE)                        /** Mask of the power level in the DTM power level set respose. */
+#define LE_TRANSMIT_POWER_MAX_LVL_BIT       (1 << 0x0A)                    /** Maximum power level bit in the power level set response. */
+#define LE_TRANSMIT_POWER_MIN_LVL_BIT       (1 << 0x09)                    /** Minimum power level bit in the power level set response. */
+
+#define LE_CTE_TYPE_MASK    0x03                                           /** Mask of the CTE type in the CTEInfo. */
+#define LE_CTE_TYPE_POS     0x06                                           /** Position of the CTE type in the CTEInfo. */
+#define LE_CTE_CTETIME_MASK 0x1F                                           /** Mask of the CTE Time in the CTEInfo. */
+
+#define LE_CTE_TYPE_AOA     0x00                                           /** CTE Type Angle of Arrival. */
+#define LE_CTE_TYPE_AOD_1US 0x01                                           /** CTE Type Angle of Departure with 1 us slot. */
+#define LE_CTE_TYPE_AOD_2US 0x02                                           /** CTE Type Angle of Departure with 2 us slot.*/
+
+#define LE_CTE_LENGTH_MIN 0x02                                             /**< DTM command parameter: Minimum supported CTE length in 8 us units. */
+#define LE_CTE_LENGTH_MAX 0x14                                             /**< DTM command parameter: Maximum supported CTE length in 8 us units. */
+
+#define LE_ANTENNA_NUMBER_MASK        0x3F                                 /**< DTM command parameter: Mask of the Antenna Number. */
+#define LE_ANTENA_SWITCH_PATTERN_MASK 0x80                                 /**< DTM command parameter: Mask of the Antenna switch pattern. */
+
+#define LE_TEST_ANTENNA_NUMBER_MIN 0x01                                    /**< Minimum antenna number. */
+#define LE_TEST_ANTENNA_NUMBER_MAX 0x4B                                    /**< Maximum antenna number. */
+
 
 // Configuration options used as parameter 2
 // when cmd == LE_TRANSMITTER_TEST and payload == DTM_PKT_VENDORSPECIFIC
@@ -96,6 +160,7 @@ typedef uint32_t dtm_cmd_t;                                                 /**<
 #define CARRIER_TEST_STUDIO             1                                   /**< nRFgo Studio uses value 1 in length field, to indicate a constant, unmodulated carrier until LE_TEST_END or LE_RESET */
 #define SET_TX_POWER                    2                                   /**< Set transmission power, value -40..+4 dBm in steps of 4 */
 #define SELECT_TIMER                    3                                   /**< Select on of the 16 MHz timers 0, 1 or 2 */
+#define SET_NRF21540_TX_POWER           4                                   /**< Set nRF21540 transmission power level. Choose between two predefinied option +20 dBm or +10 dBm. */
 
 #define LE_PACKET_REPORTING_EVENT       0x8000                              /**< DTM Packet reporting event, returned by the device to the tester. */
 #define LE_TEST_STATUS_EVENT_SUCCESS    0x0000                              /**< DTM Status event, indicating success. */
@@ -107,6 +172,8 @@ typedef uint32_t dtm_cmd_t;                                                 /**<
 #define DTM_PKT_0XFF                    0x03                                /**< Bit pattern 11111111 (Used only for coded PHY). */
 #define DTM_PKT_VENDORSPECIFIC          0x03                                /**< Vendor specific PKT field value. Nordic: Continuous carrier test, or configuration. */
 #define DTM_PKT_TYPE_VENDORSPECIFIC     0xFF                                /**< Vendor specific packet type for internal use. */
+
+#define DTM_PKT_CP_BIT                 0x20                                /**< CTEInfo Preset bit. Indicates whether the CTEInfo field is present in the packet. */
 
 // The pdu payload type for each bit pattern. Identical to the PKT value except pattern 0xFF which is 0x04.
 #define DTM_PDU_TYPE_PRBS9              0x00                                /**< PDU payload type for bit pattern PRBS9. */
@@ -121,6 +188,17 @@ typedef uint32_t dtm_cmd_t;                                                 /**<
 #define DTM_ERROR_ILLEGAL_LENGTH        0x03                                /**< Payload size must be in the range 0..37. */
 #define DTM_ERROR_ILLEGAL_CONFIGURATION 0x04                                /**< Parameter out of range (legal range is function dependent). */
 #define DTM_ERROR_UNINITIALIZED         0x05                                /**< DTM module has not been initialized by the application. */
+
+
+#define DTM_LE_DATA_PACKET_LEN_EXTENSION 0x02                               /**< DTM Status Response: LE Data Packet Length Extension feature supported. */
+#define DTM_LE_2M_PHY                    0x04                               /**< DTM Status Response: LE 2M PHY supported. */
+#define DTM_LE_STABLE_MODULATION_INDEX   0x08                               /**< DTM Status Response: Transmitter has a Stable Modulation Index. */
+#define DTM_LE_CODED_PHY                 0x10                               /**< DTM Status Response: LE Coded PHY supported. */
+#define DTM_LE_CONSTANT_TONE_EXTENSION   0x20                               /**< DTM Status Response: Constant Tone Extension Supported. */
+#define DTM_LE_ANTENNA_SWITCH            0x40                               /**< DTM Status Response: Antenna switching supported. */
+#define DTM_LE_AOD_1US_TANSMISSION       0x80                               /**< DTM Status Response: 1us switching supported for AoD tansmission. */
+#define DTM_LE_AOD_1US_RECEPTION         0x100                              /**< DTM Status Response: 1us sampling supported for AoA reception. */
+#define DTM_LE_AOA_1US_RECEPTION         0x200                              /**< DTM Status Response: 1us switching and sampling supported for AoA reception. */
 
 /**@details The UART poll cycle in micro seconds.
  *          A baud rate of e.g. 19200 bits / second, and 8 data bits, 1 start/stop bit, no flow control,
@@ -171,6 +249,13 @@ typedef uint32_t dtm_freq_t;                                            /**< Phy
 /**@brief BLE DTM packet types. */
 typedef uint32_t dtm_pkt_type_t;                                        /**< Type for holding the requested DTM payload type.*/
 
+/**@brief BLE DTM nRF21540 power mode. */
+typedef enum
+{
+    NRF21540_POWER_MODE_A = 0x01,                                      /**< Set nRF21540 transmission power level to the A(20 dBm) predefinied value. */
+    NRF21540_POWER_MODE_B = 0x02                                       /**< Set nRF21540 transmission power level to the B(10 dBm) predefinied value. */
+} dtm_nrf21540_power_mode_t;
+
 
 /**@brief Function for initializing or re-initializing DTM module
  *
@@ -190,15 +275,11 @@ uint32_t dtm_wait(void);
 
 /**@brief Function for calling when a complete command has been prepared by the Tester.
  *
- * @param[in]   cmd       One of the DTM_CMD values (bits 14:15 in the 16-bit UART format).
- * @param[in]   freq      Phys. channel no - actual frequency = (2402 + freq * 2) MHz (bits 8:13 in
- *                        the 16-bit UART format).
- * @param[in]   length    Payload length, 0..37 (bits 2:7 in the 16-bit UART format).
- * @param[in]   payload   One of the DTM_PKT values (bits 0:1 in the 16-bit UART format).
+ * @param[in] cmd received 16-bit complete command from the Tester.
  *
- * @return      DTM_SUCCESS or one of the DTM_ERROR_ values
+ * @return    DTM_SUCCESS or one of the DTM_ERROR_ values
  */
-uint32_t dtm_cmd(dtm_cmd_t cmd, dtm_freq_t freq, uint32_t length, dtm_pkt_type_t payload);
+uint32_t dtm_cmd(uint16_t cmd);
 
 
 /**@brief Function for reading the result of a DTM command
@@ -230,6 +311,17 @@ bool dtm_set_timer(uint32_t new_timer);
  * @return      true: tx power setting changed, false: parameter error
  */
 bool dtm_set_txpower(uint32_t new_tx_power);
+
+
+/**@brief Function for choosing nRF21540 power level.
+ *
+ * @note        Must be called when no DTM test is running and nRF21540 is used.
+ *
+ * @param[in]   power_mode nRF21540 power mode.
+ *
+ * @return      true: tx power mode setting changed, false: parameter error
+ */
+bool dtm_set_nrf21450_power_mode(dtm_nrf21540_power_mode_t power_mode);
 
 
 #ifdef __cplusplus

@@ -55,7 +55,7 @@ extern "C" {
 
 typedef portSTACK_TYPE StackType_t;
 typedef long BaseType_t;
-typedef unsigned long UBaseType_t;
+typedef uint32_t UBaseType_t; /* to provide compatibility with CMSIS */
 
 #if ( configUSE_16_BIT_TICKS == 1 )
     typedef uint16_t TickType_t;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -272,8 +272,6 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
         }
     }
 
-    cc310_backend_enable();
-
     result = CC_AESCCM_Init(&p_ctx->context,
                             operation_cc310,
                             p_ctx->key,
@@ -285,8 +283,6 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
                             mac_size,
                             mode);
 
-    cc310_backend_disable();
-
     ret_val = result_get(result);
 
     if (ret_val != NRF_SUCCESS)
@@ -296,13 +292,10 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
 
     if ((adata_size > 0) && (p_adata != NULL))
     {
-        cc310_backend_enable();
 
         result = CRYS_AESCCM_BlockAdata(&p_ctx->context,
                                         p_adata,
                                         (uint32_t)adata_size);
-
-        cc310_backend_disable();
 
         ret_val = result_get(result);
 
@@ -315,16 +308,12 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
     /* CC310 backend always needs 16 bytes buffer for MAC calculation. */
     memcpy(mac_buffer, p_mac, mac_size);
 
-    cc310_backend_enable();
-
     result = CRYS_AESCCM_Finish(&p_ctx->context,
                                 p_data_in,
                                 (uint32_t)data_in_size,
                                 p_data_out,
                                 mac_buffer,
                                 &mac_size);
-
-    cc310_backend_disable();
 
     ret_val = result_get(result);
     if (ret_val == NRF_SUCCESS)

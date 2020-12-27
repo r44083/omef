@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -239,10 +239,16 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
                 // No more records available. Should not happen.
                 APP_ERROR_HANDLER(NRF_ERROR_NO_MEM);
             }
-            else if ((p_ble_evt->evt.gap_evt.params.connected.role != BLE_GAP_ROLE_PERIPH))
+#ifdef BLE_GAP_ROLE_CENTRAL
+            else if ((p_ble_evt->evt.gap_evt.params.connected.role == BLE_GAP_ROLE_CENTRAL))
             {
                 // Central
                 nrf_atflags_set(&m_bcs.flags.central_flags, conn_handle);
+            }
+#endif // BLE_GAP_ROLE_CENTRAL
+            else
+            {
+                // No implementation required.
             }
 
             break;
@@ -290,12 +296,14 @@ uint8_t ble_conn_state_role(uint16_t conn_handle)
 
     if (ble_conn_state_valid(conn_handle))
     {
-#if !defined(S112) && !defined(S312) && !defined(S113)
+#if defined (BLE_GAP_ROLE_PERIPH) && defined (BLE_GAP_ROLE_CENTRAL)
         bool central = nrf_atflags_get(&m_bcs.flags.central_flags, conn_handle);
         role = central ? BLE_GAP_ROLE_CENTRAL : BLE_GAP_ROLE_PERIPH;
+#elif defined (BLE_GAP_ROLE_CENTRAL)
+        role = BLE_GAP_ROLE_CENTRAL;
 #else
         role = BLE_GAP_ROLE_PERIPH;
-#endif // !defined (S112) && !defined(S312) && !defined(S113)
+#endif // defined (BLE_GAP_ROLE_PERIPH) && defined (BLE_GAP_ROLE_CENTRAL)
     }
 
     return role;

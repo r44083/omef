@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -223,6 +223,10 @@ static void loop_forever(void)
     }
 }
 
+#if NRF_BL_DFU_ENTER_METHOD_BUTTON
+#ifndef BUTTON_PULL
+    #error NRF_BL_DFU_ENTER_METHOD_BUTTON is enabled but not buttons seem to be available on the board.
+#endif
 /**@brief Function for initializing button used to enter DFU mode.
  */
 static void dfu_enter_button_init(void)
@@ -231,6 +235,7 @@ static void dfu_enter_button_init(void)
                              BUTTON_PULL,
                              NRF_GPIO_PIN_SENSE_LOW);
 }
+#endif
 
 
 static bool crc_on_valid_app_required(void)
@@ -433,10 +438,9 @@ ret_code_t nrf_bootloader_init(nrf_dfu_observer_t observer)
         nrf_bootloader_debug_port_disable();
     }
 
-    if (NRF_BL_DFU_ENTER_METHOD_BUTTON)
-    {
-        dfu_enter_button_init();
-    }
+#if NRF_BL_DFU_ENTER_METHOD_BUTTON
+    dfu_enter_button_init();
+#endif
 
     ret_val = nrf_dfu_settings_init(false);
     if (ret_val != NRF_SUCCESS)

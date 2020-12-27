@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -63,14 +63,14 @@ static void link_init(nrf_ble_gatt_link_t * p_link)
     p_link->att_mtu_effective          = BLE_GATT_ATT_MTU_DEFAULT;
     p_link->att_mtu_exchange_pending   = false;
     p_link->att_mtu_exchange_requested = false;
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined (S122)
     p_link->data_length_desired        = NRF_SDH_BLE_GAP_DATA_LENGTH;
     p_link->data_length_effective      = BLE_GAP_DATA_LENGTH_DEFAULT;
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 }
 
 /**@brief   Start a data length update request procedure on a given connection. */
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined(S122)
 static ret_code_t data_length_update(uint16_t conn_handle, uint16_t data_length)
 {
     NRF_LOG_DEBUG("Updating data length to %u on connection 0x%x.",
@@ -109,7 +109,7 @@ static ret_code_t data_length_update(uint16_t conn_handle, uint16_t data_length)
 
     return err_code;
 }
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 
 
 /**@brief Handle a connected event.
@@ -126,15 +126,17 @@ static void on_connected_evt(nrf_ble_gatt_t * p_gatt, ble_evt_t const * p_ble_ev
     nrf_ble_gatt_link_t * p_link      = &p_gatt->links[conn_handle];
 
     // Update the link desired settings to reflect the current global settings.
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined(S122)
     p_link->data_length_desired = p_gatt->data_length;
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 
     switch (p_ble_evt->evt.gap_evt.params.connected.role)
     {
+#if !defined (S122)
         case BLE_GAP_ROLE_PERIPH:
             p_link->att_mtu_desired = p_gatt->att_mtu_desired_periph;
             break;
+#endif // !defined (S122)
 
 #if !defined (S112) && !defined(S312) && !defined(S113)
         case BLE_GAP_ROLE_CENTRAL:
@@ -172,13 +174,13 @@ static void on_connected_evt(nrf_ble_gatt_t * p_gatt, ble_evt_t const * p_ble_ev
         }
     }
 
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined (S122)
     // Send a data length update request if necessary.
     if (p_link->data_length_desired > p_link->data_length_effective)
     {
         (void) data_length_update(conn_handle, p_link->data_length_desired);
     }
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 }
 
 
@@ -292,7 +294,7 @@ static void on_exchange_mtu_request_evt(nrf_ble_gatt_t * p_gatt, ble_evt_t const
  * @param[in]   p_gatt      GATT structure.
  * @param[in]   p_ble_evt   Event received from the BLE stack.
  */
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined (S122)
 static void on_data_length_update_evt(nrf_ble_gatt_t * p_gatt, ble_evt_t const * p_ble_evt)
 {
     ble_gap_evt_t const gap_evt     = p_ble_evt->evt.gap_evt;
@@ -361,7 +363,7 @@ static void on_data_length_update_request_evt(nrf_ble_gatt_t * p_gatt, ble_evt_t
 
     (void) data_length_update(p_gap_evt->conn_handle, data_length_effective);
 }
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 
 
 ret_code_t nrf_ble_gatt_init(nrf_ble_gatt_t * p_gatt, nrf_ble_gatt_evt_handler_t evt_handler)
@@ -420,7 +422,7 @@ uint16_t nrf_ble_gatt_eff_mtu_get(nrf_ble_gatt_t const * p_gatt, uint16_t conn_h
     return p_gatt->links[conn_handle].att_mtu_effective;
 }
 
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined (S122)
 ret_code_t nrf_ble_gatt_data_length_set(nrf_ble_gatt_t * p_gatt,
                                         uint16_t         conn_handle,
                                         uint8_t          data_length)
@@ -479,7 +481,7 @@ ret_code_t nrf_ble_gatt_data_length_get(nrf_ble_gatt_t const * p_gatt,
     *p_data_length = p_gatt->links[conn_handle].data_length_effective;
     return NRF_SUCCESS;
 }
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined(S122)
 
 
 void nrf_ble_gatt_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
@@ -510,7 +512,7 @@ void nrf_ble_gatt_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
             on_exchange_mtu_request_evt(p_gatt, p_ble_evt);
             break;
 
-#if !defined (S112) && !defined(S312)
+#if !defined (S112) && !defined(S312) && !defined (S122)
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE:
             on_data_length_update_evt(p_gatt, p_ble_evt);
             break;
@@ -518,7 +520,7 @@ void nrf_ble_gatt_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
             on_data_length_update_request_evt(p_gatt, p_ble_evt);
             break;
-#endif // !defined (S112) && !defined(S312)
+#endif // !defined (S112) && !defined(S312) && !defined (S122)
 
         default:
             break;

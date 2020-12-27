@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2012 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -147,32 +147,6 @@ static uint32_t uart_init(app_uart_stream_comm_params_t * p_comm_params)
 }
 
 
-/**@brief Function for splitting UART command bit fields into separate command parameters for the DTM library.
- *
- * @param[in]   command   The packed UART command.
- * @return      result status from dtmlib.
- */
-static uint32_t dtm_cmd_put(uint16_t command)
-{
-    dtm_cmd_t      command_code = (command >> 14) & 0x03;
-    dtm_freq_t     freq         = (command >> 8) & 0x3F;
-    uint32_t       length       = (command >> 2) & 0x3F;
-    dtm_pkt_type_t payload      = command & 0x03;
-
-    //Check for Vendor Specific payload.
-    if (payload == 0x03)
-    {
-        /* Note that in a HCI adaption layer, as well as in the DTM PDU format,
-           the value 0x03 is a distinct bit pattern (PRBS15). Even though BLE does not
-           support PRBS15, this implementation re-maps 0x03 to DTM_PKT_VENDORSPECIFIC,
-           to avoid the risk of confusion, should the code be extended to greater coverage.
-         */
-        payload = DTM_PKT_VENDORSPECIFIC;
-    }
-    return dtm_cmd(command_code, freq, length, payload);
-}
-
-
 /**@brief Function for application main entry.
  *
  * @details This function serves as an adaptation layer between a 2-wire UART interface and the
@@ -241,7 +215,7 @@ uint32_t dtm_start(app_uart_stream_comm_params_t uart_comm_params)
         is_msb_read        = false;
         dtm_cmd_from_uart |= (dtm_cmd_t)rx_byte;
 
-        if (dtm_cmd_put(dtm_cmd_from_uart) != DTM_SUCCESS)
+        if (dtm_cmd(dtm_cmd_from_uart) != DTM_SUCCESS)
         {
             //Extended error handling may be put here.
             //Default behavior is to return the event on the UART (see below);

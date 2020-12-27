@@ -81,11 +81,10 @@ int32_t SaSi_PalMemCmp( const void* aTarget, /*!< [in] The target buffer to comp
  *        number of bytes was compared even if the bytes are different.
  *        The function should be used to avoid security timing attacks.
  *
- * @return SASI_SUCCESS in case of success,
- * @return value on failure as defined in  ssi_pal_error.h.
+ * @return True if same, otherwise false
  */
-SaSiError_t SaSi_PalSecMemCmp(  const uint8_t* aTarget,  /*!< [in] The target buffer to compare. */
-                        const uint8_t* aSource,  /*!< [in] The Source buffer to compare to. */
+bool SaSi_PalSecMemCmp(  const void* aTarget,  /*!< [in] The target buffer to compare. */
+                        const void* aSource,  /*!< [in] The Source buffer to compare to. */
                         uint32_t  aSize      /*!< [in] Number of bytes to compare. */);
 
 /*!

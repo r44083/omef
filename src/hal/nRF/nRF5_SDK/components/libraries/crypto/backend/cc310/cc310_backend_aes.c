@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -406,8 +406,6 @@ static ret_code_t backend_cc310_update(void * const p_context,
             data_size  = 0;
         }
 
-        cc310_backend_enable();
-
         if (p_ctx->any.backend.operation == NRF_CRYPTO_MAC_CALCULATE)
         {
             result  = SaSi_AesBlock(&p_ctx->any.context,
@@ -422,8 +420,6 @@ static ret_code_t backend_cc310_update(void * const p_context,
                                     size,
                                     p_data_out + offset);
         }
-
-        cc310_backend_disable();
 
         offset += size;
         ret_val = result_get(result);
@@ -479,14 +475,10 @@ static ret_code_t backend_cc310_finalize(void * const p_context,
         size       = CC310_MAX_LENGTH_DMA_AES_OPERATIONS;
         data_size -= CC310_MAX_LENGTH_DMA_AES_OPERATIONS;
 
-        cc310_backend_enable();
-
         result  = SaSi_AesBlock(&p_ctx->any.context,
                                 p_data_in  + offset,
                                 size,
                                 p_data_out + offset);
-
-        cc310_backend_disable();
 
         offset += size;
         ret_val = result_get(result);
@@ -500,16 +492,12 @@ static ret_code_t backend_cc310_finalize(void * const p_context,
     /* Calculate space in the output buffer */
     *p_data_out_size -= offset;
 
-    cc310_backend_enable();
-
     result = SaSi_AesFinish(&p_ctx->any.context,
                             data_size,
                             p_data_in  + offset,
                             data_size,
                             p_data_out + offset,
                             p_data_out_size);
-
-    cc310_backend_disable();
 
     ret_val = result_get(result);
 
@@ -578,14 +566,10 @@ static ret_code_t backend_cc310_mac_finalize(void * const p_context,
         size       = CC310_MAX_LENGTH_DMA_AES_OPERATIONS;
         data_size -= CC310_MAX_LENGTH_DMA_AES_OPERATIONS;
 
-        cc310_backend_enable();
-
         result  = SaSi_AesBlock(&p_ctx->any.context,
                                 p_data_in  + offset,
                                 size,
                                 p_data_out);
-
-        cc310_backend_disable();
 
         offset += size;
         ret_val = result_get(result);
@@ -596,16 +580,12 @@ static ret_code_t backend_cc310_mac_finalize(void * const p_context,
         }
     }
 
-    cc310_backend_enable();
-
     result = SaSi_AesFinish(&p_ctx->any.context,
                             data_size,
                             p_data_in  + offset,
                             data_size,
                             p_data_out,
                             p_data_out_size);
-
-    cc310_backend_disable();
 
     ret_val = result_get(result);
 

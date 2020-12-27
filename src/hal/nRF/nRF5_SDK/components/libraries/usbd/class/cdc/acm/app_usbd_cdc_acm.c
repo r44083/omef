@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -760,6 +760,7 @@ static ret_code_t cdc_acm_event_handler(app_usbd_class_inst_t const *  p_inst,
         case APP_USBD_EVT_STOPPED:
             break;
         case APP_USBD_EVT_POWER_REMOVED:
+            user_event_handler(p_inst, APP_USBD_CDC_ACM_USER_EVT_PORT_CLOSE);
             cdc_acm_reset_port(p_inst);
             break;
         default:

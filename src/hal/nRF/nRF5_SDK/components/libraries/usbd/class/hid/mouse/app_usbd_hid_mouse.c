@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -676,6 +676,7 @@ const app_usbd_hid_methods_t app_usbd_hid_mouse_methods = {
     .on_set_report              = hid_mouse_on_set_report,
     .ep_transfer_in             = hid_mouse_ep_transfer_in,
     .ep_transfer_out            = NULL,
+    .subclass_count             = hid_mouse_get_class_descriptors_count,
     .subclass_length            = hid_mouse_get_class_descriptors_length,
     .subclass_data              = hid_mouse_get_class_descriptors_data,
     .on_idle                    = hid_mouse_on_idle,

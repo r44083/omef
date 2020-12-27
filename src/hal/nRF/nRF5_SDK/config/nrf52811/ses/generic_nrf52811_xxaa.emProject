@@ -29,7 +29,7 @@
       linker_section_placement_file="flash_placement.xml"
       linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x30000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x6000;FLASH_START=0x19000;FLASH_SIZE=0x17000;RAM_START=0x20001118;RAM_SIZE=0x4ee8"
       
-      linker_section_placements_segments="FLASH RX 0x0 0x30000;RAM RWX 0x20000000 0x6000"
+      linker_section_placements_segments="FLASH RX 0x0 0x30000;RAM1 RWX 0x20000000 0x6000"
       project_directory=""
       project_type="Executable" />
       <folder Name="Segger Startup Files">
@@ -82,7 +82,7 @@
   </project>
   <configuration Name="Release"
     c_preprocessor_definitions="NDEBUG"
-    gcc_optimization_level="Optimize For Size" />
+    link_time_optimization="No"    gcc_optimization_level="Optimize For Size" />
   <configuration Name="Debug"
     c_preprocessor_definitions="DEBUG; DEBUG_NRF"
     gcc_optimization_level="None"/>

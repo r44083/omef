@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -107,7 +107,6 @@ typedef enum
     NRF_BLE_SCAN_EVT_WHITELIST_ADV_REPORT, /**< Send notification to the main application when a device from the whitelist is found. */
     NRF_BLE_SCAN_EVT_NOT_FOUND,            /**< The filter was not matched for the scan data. */
     NRF_BLE_SCAN_EVT_SCAN_TIMEOUT,         /**< Scan timeout. */
-    NRF_BLE_SCAN_EVT_SCAN_REQ_REPORT,      /**< Scan request report. */
     NRF_BLE_SCAN_EVT_CONNECTING_ERROR,     /**< Error occurred when establishing the connection. In this event, an error is passed from the function call @ref sd_ble_gap_connect. */
     NRF_BLE_SCAN_EVT_CONNECTED             /**< Connected to device. */
 } nrf_ble_scan_evt_t;
@@ -192,7 +191,6 @@ typedef struct
     union
     {
         nrf_ble_scan_evt_filter_match_t   filter_match;           /**< Scan filter match. */
-        ble_gap_evt_scan_req_report_t     req_report;             /**< Scan request report parameters. */
         ble_gap_evt_timeout_t             timeout;                /**< Timeout event parameters. */
         ble_gap_evt_adv_report_t const  * p_whitelist_adv_report; /**< Advertising report event parameters for whitelist. */
         ble_gap_evt_adv_report_t const  * p_not_found;            /**< Advertising report event parameters when filter is not found. */

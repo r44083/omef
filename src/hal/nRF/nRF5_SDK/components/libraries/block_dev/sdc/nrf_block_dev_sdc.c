@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -56,7 +56,7 @@ static volatile sdc_result_t m_last_result;
  * */
 static nrf_block_dev_sdc_t const * m_active_sdc_dev;
 
-
+static ret_code_t block_dev_sdc_uninit(nrf_block_dev_t const * p_blk_dev);
 
 static void wait_func(void)
 {
@@ -81,6 +81,13 @@ static void sdc_handler(sdc_evt_t const * p_event)
     {
         case SDC_EVT_INIT:
             {
+                if (p_event->result != SDC_SUCCESS)
+                {
+                    nrf_block_dev_t const * block_dev = &(p_sdc_dev->block_dev);
+                    ret_code_t err_code = block_dev_sdc_uninit(block_dev);
+                    APP_ERROR_CHECK(err_code);
+                }
+
                 p_work->geometry.blk_count = app_sdc_info_get()->num_blocks;
                 p_work->geometry.blk_size  = SDC_SECTOR_SIZE;
                 if (m_active_sdc_dev->p_work->ev_handler)

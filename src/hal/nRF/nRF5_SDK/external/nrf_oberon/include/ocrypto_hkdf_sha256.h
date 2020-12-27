@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2019 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -58,13 +58,12 @@
 #ifndef OCRYPTO_HKDF_SHA256_H
 #define OCRYPTO_HKDF_SHA256_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Maximum length of a derived key.
@@ -103,6 +102,6 @@ void ocrypto_hkdf_sha256(
 }
 #endif
 
-#endif
+#endif /* #ifndef OCRYPTO_HKDF_SHA256_H */
 
 /** @} */

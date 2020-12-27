@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -162,6 +162,7 @@ typedef struct {
     uint16_t tx_chunk8;
     uint8_t rts_pin;
     bool rts_manual;
+    bool enabled;
 } nrf_libuarte_drv_ctrl_blk_t;
 
 typedef struct {

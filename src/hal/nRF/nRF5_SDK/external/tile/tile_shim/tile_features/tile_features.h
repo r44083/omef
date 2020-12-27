@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2016 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -33,20 +32,6 @@
 #include "drivers/tile_timer_driver.h"
 #include "modules/tile_test_module.h"
 
-/**
- * @brief Number of TOA channels supported
- */
-#define NUM_TOA_CHANNELS             8
-
-/**
- * @brief Diagnostic Version
- */
-#define DIAGNOSTIC_VERSION           80
-
-/**
- * @brief Size of the TOA message buffer
- */
-#define TOA_QUEUE_BUFFER_SIZE        (100 + 40 * (NUM_TOA_CHANNELS - 1))
 
 typedef struct
 {
@@ -64,7 +49,7 @@ struct my_evt
   uint8_t type;
 };
 
-enum
+enum TILE_APP_TEST_CMDS
 {
   TEST_CMD_REBOOT = TILE_TEST_MODULE_CODE_BASE,
   TEST_CMD_STORAGE,
@@ -86,6 +71,8 @@ enum TEST_REBOOT
 extern tile_ble_env_t tile_ble_env;
 extern app_timer_id_t tile_timer_id[TILE_MAX_TIMERS];
 void tile_features_init(void);
+void tile_button_was_pressed(void);
+int tile_read_button_state(uint8_t *button_state);
 void tile_update_tileID_char(void);
 
 #endif

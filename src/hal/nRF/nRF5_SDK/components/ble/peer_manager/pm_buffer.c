@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -120,7 +120,7 @@ uint8_t pm_buffer_block_acquire(pm_buffer_t * p_buffer, uint32_t n_blocks)
             {
                 first_locked_mutex = i;
             }
-            if ((i - first_locked_mutex + 1) == n_blocks)
+            if ((i - first_locked_mutex + 1U) == n_blocks)
             {
                 return first_locked_mutex;
             }

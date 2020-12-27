@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -102,27 +102,47 @@ enum {
  * The array that transforms the USB string indexes into internal array position.
  * @note Value 0 is used to mark non-existing string.
  */
-static uint8_t const m_string_translation[APP_USBD_STRING_ID_CNT] =
+#define X(mnemonic, str_idx, ...) 1 +
+static app_usbd_strings_convert_t const m_string_translation[APP_USBD_STRINGS_NUM] =
+#undef X
 {
-    [APP_USBD_STRING_ID_LANGIDS] = APP_USBD_STRING_ID_LANGIDS_ARRAY_POS,
-
+    {
+        .identifier = APP_USBD_STRING_ID_LANGIDS,
+        .array_pos = APP_USBD_STRING_ID_LANGIDS_ARRAY_POS,
+    },
 #if (APP_USBD_STRING_ID_MANUFACTURER != 0)
-    [APP_USBD_STRING_ID_MANUFACTURER] = APP_USBD_STRING_ID_MANUFACTURER_ARRAY_POS,
+    {
+        .identifier = APP_USBD_STRING_ID_MANUFACTURER,
+        .array_pos = APP_USBD_STRING_ID_MANUFACTURER_ARRAY_POS,
+    },
 #endif // (APP_USBD_STRING_ID_MANUFACTURER != 0)
 
 #if (APP_USBD_STRING_ID_PRODUCT != 0)
-    [APP_USBD_STRING_ID_PRODUCT] = APP_USBD_STRING_ID_PRODUCT_ARRAY_POS,
+    {
+        .identifier = APP_USBD_STRING_ID_PRODUCT,
+        .array_pos = APP_USBD_STRING_ID_PRODUCT_ARRAY_POS,
+    },
 #endif // (APP_USBD_STRING_ID_PRODUCT != 0)
 
 #if (APP_USBD_STRING_ID_SERIAL != 0)
-    [APP_USBD_STRING_ID_SERIAL] = APP_USBD_STRING_ID_SERIAL_ARRAY_POS,
+    {
+        .identifier = APP_USBD_STRING_ID_SERIAL,
+        .array_pos = APP_USBD_STRING_ID_SERIAL_ARRAY_POS,
+    },
 #endif // (APP_USBD_STRING_ID_SERIAL != 0)
 
 #if (APP_USBD_STRING_ID_CONFIGURATION != 0)
-    [APP_USBD_STRING_ID_CONFIGURATION] = APP_USBD_STRING_ID_CONFIGURATION_ARRAY_POS,
+    {
+        .identifier = APP_USBD_STRING_ID_CONFIGURATION,
+        .array_pos = APP_USBD_STRING_ID_CONFIGURATION_ARRAY_POS,
+    },
 #endif // (APP_USBD_STRING_ID_CONFIGURATION != 0)
 
-#define X(mnemonic, str_idx, ...) [mnemonic] = CONCAT_2(mnemonic, _ARRAY_POS),
+#define X(mnemonic, ...)                                \
+    {                                                   \
+        .identifier = mnemonic,                         \
+        .array_pos = CONCAT_2(mnemonic, _ARRAY_POS),    \
+    },
     APP_USBD_STRINGS_USER
 #undef X
 };
@@ -162,7 +182,9 @@ extern uint8_t APP_USBD_STRING_CONFIGURATION[];
 /**
  * @brief String descriptor table.
  * */
-static uint8_t const * m_string_dsc[APP_USBD_STRING_ID_CNT][ARRAY_SIZE(m_langids)] =
+#define X(mnemonic, str_idx, ...) 1 +
+static uint8_t const * m_string_dsc[APP_USBD_STRINGS_NUM][ARRAY_SIZE(m_langids)] =
+#undef X
 {
     [APP_USBD_STRING_ID_LANGIDS_ARRAY_POS] = {APP_USBD_STRING_RAW16_DESC(APP_USBD_STRINGS_LANGIDS)},
 
@@ -263,13 +285,17 @@ uint16_t const * app_usbd_string_desc_get(uint8_t idx, uint16_t langid)
         }
     }
 
-    /* Get the string index in array. */
-    if (idx >= ARRAY_SIZE(m_string_translation))
+    uint8_t str_pos = 0;
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(m_string_translation); i++)
     {
-        return NULL;
+        if (m_string_translation[i].identifier == idx)
+        {
+            str_pos = m_string_translation[i].array_pos;
+            break;
+        }
     }
 
-    uint8_t str_pos = m_string_translation[idx];
     if (str_pos == 0)
     {
         return NULL;

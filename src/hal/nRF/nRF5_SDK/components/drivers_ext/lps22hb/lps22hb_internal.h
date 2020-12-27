@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2017 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -356,7 +356,7 @@ typedef struct
     NRF_TWI_SENSOR_REG_SET(_s.ctrl_reg[2], LPS22HB_F_OVR_MASK, LPS22HB_F_OVR_POS, _ovr);           \
     NRF_TWI_SENSOR_REG_SET(_s.ctrl_reg[2],                                                         \
                            LPS22HB_INT_S_MASK,                                                     \
-                           LPS22HB_INT_S_MASK,                                                     \
+                           LPS22HB_INT_S_POS,                                                      \
                            (_low << 1) + _high);
 #ifdef __cplusplus
 }

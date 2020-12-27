@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -43,6 +43,8 @@
 #include "es_adv_timing.h"
 #include "es_tlm.h"
 #include "es_slot.h"
+
+#define MULTIPROT_BEACON_DELAY_MS                75                                  //!< Maximum delay of the beacon send by multiprotocol example.
 
 static es_adv_evt_handler_t m_adv_evt_handler;                                       //!< Eddystone advertisement event handler.
 static bool                 m_is_connected       = false;                            //!< Is the Eddystone beacon in a connected state.
@@ -121,7 +123,15 @@ static void get_adv_params(ble_gap_adv_params_t * p_adv_params,
 
     if (non_connectable)
     {
+#ifdef MULTIPROTOCOL_802154_MODE
+        /* In case the Eddystone component is used by multiprotocol example,
+           calculate the interval taking into account that beacon may be sent with a delay.
+           MULTIPROTOCOL_802154_MODE is defined for multiprotocol examples only.
+        */
+        p_adv_params->interval = MSEC_TO_UNITS(((m_adv_interval - MULTIPROT_BEACON_DELAY_MS) > 0 ? (m_adv_interval - MULTIPROT_BEACON_DELAY_MS) : m_adv_interval), UNIT_0_625_MS);
+#else
         p_adv_params->interval = MSEC_TO_UNITS(m_adv_interval, UNIT_0_625_MS);
+#endif // MULTIPROTOCOL_802154_MODE
         p_adv_params->duration = BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED;
     }
     else

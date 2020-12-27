@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -31,23 +30,26 @@
 
 #include "ble.h"
 #include "tile_lib.h"
-#include "ble_advdata.h"
-#include "ble_advertising.h"
 
-/**
- * @brief Time before automatic disconnection if not authenticated
+/** @defgroup TOA Tile Over-the-air API
+ *  @{
+ *  @ingroup ext_ble_lib
+ *  @brief Tile Over-the-air Api: defines Tile communication protocol over the air
  */
 
 /**
  * @brief Initialize Tile service. Store advertising data configuration from the application.
  * @note  This function must be called before @ref ble_advertising_init
  */
-void tile_service_init(ble_advdata_t const * const p_advdata,
-                       ble_advertising_t   * const p_advertising);
-
+void tile_service_init(void);
 void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context);
+void tile_get_adv_params(uint16_t* uuid, uint16_t* interval);
 
 uint16_t tile_get_adv_uuid(void);
+
+/**
+ *  @}
+ */
 
 #endif // TILE_SERVICE_H_
 

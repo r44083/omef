@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2019 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -33,6 +32,8 @@
 #include "boards.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_log.h"
+#include "nrf_drv_ppi.h"
+#include "nrf_drv_rng.h"
 
 
 #include "tile_service/tile_service.h"
@@ -45,10 +46,10 @@
 
 // TileLib includes
 #include "tile_lib.h"
-#include "toa/toa.h"
 #include "drivers/tile_gap_driver.h"
 #include "drivers/tile_timer_driver.h"
 #include "modules/tile_tmd_module.h"
+#include "modules/tile_toa_module.h"
 
 #include <stdbool.h>
 #include <string.h> 
@@ -66,19 +67,6 @@ static void tile_timer_timeout_handler(void *p_context);
  
 #define APP_BLE_TILE_OBSERVER_PRIO      3
 
-/**@brief Tx State */
-typedef enum
-{
-  TX_QUEUE_EMPTY,  
-  TX_QUEUE_FULL 
-} tx_queue_state;
-
-/**@brief Tx Data */
-typedef enum
-{
-  TX_DATA_INVALID,
-  TX_DATA_VALID  
-} tx_data_validity;
 
 /*******************************************************************************
  * Global variables
@@ -88,93 +76,54 @@ static app_timer_t tile_timer_data[TILE_MAX_TIMERS] = { 0 };
 /*******************************************************************************
  * Local variables
  ******************************************************************************/
-/* Indicates if there is data pending to be Transmitted 
- */
-static bool tx_data  = TX_DATA_INVALID; 
-
-/* Indicates if Transmission is on-going or not
- * By default TX queue size is 1: Refer BLE_GATTS_HVN_TX_QUEUE_SIZE_DEFAULT  
- */
-static bool tx_state = TX_QUEUE_EMPTY;
-
-static ble_advertising_t * mp_advertising;          /**< Pointer to advertising module instance. */
-static ble_advdata_t       m_adv_data_conf;         /**< Advertising data configuration is kept because some parts will be updated dynamically. */
 
 
 /*******************************************************************************
  * Functions
  ******************************************************************************/
 
-
-/**@brief Function for updating advertising payload
- **/
-static void advertising_update(ble_advdata_t     * const p_advdata,
-                               ble_advertising_t * const p_adv)
-{
-  ret_code_t                err_code;
-  uint8_t                   uuid_index;
-  ble_advdata_uuid_list_t * p_adv_uuids = &p_advdata->uuids_complete;
-
-  /* Search for Tile Service UUID */
-  for (uuid_index = 0; uuid_index < p_adv_uuids->uuid_cnt; uuid_index++)
-  {
-    if ((p_adv_uuids->p_uuids[uuid_index].uuid == TILE_ACTIVATED_UUID) ||
-        (p_adv_uuids->p_uuids[uuid_index].uuid == TILE_SHIPPING_UUID))
-    {
-      /* Get updated Tile_Service_UUID: 0xFEEC in Shipping Mode, 0xFEED in Activated Mode */
-      p_adv_uuids->p_uuids[uuid_index].uuid = tile_get_adv_uuid();
-      break;
-    }
-  }
-
-  /* Update advertising data */
-  err_code = ble_advertising_advdata_update(mp_advertising, p_advdata, NULL);
-  APP_ERROR_CHECK(err_code);
-
-  NRF_LOG_INFO("Advertising data updated");
-}
-
-
 /**
  * @brief Initialize Tile BLE service
  */
-void tile_service_init(ble_advdata_t const * const p_advdata,
-                       ble_advertising_t   * const p_advertising)
+void tile_service_init(void)
 {
-  tile_storage_init(); // Initialize storage before initializing features
-  tile_features_init();
+  nrf_drv_rng_config_t rng_config = NRF_DRV_RNG_DEFAULT_CONFIG;
 
   /* Initialize Tile timers */
   for(int i = 0; i < TILE_MAX_TIMERS; i++)
   {
     tile_timer_id[i] = &tile_timer_data[i];
     /* We use one universal timeout handler with p_context containing the timer ID for dispatch to the shim */
-    (void) app_timer_create(&tile_timer_id[i],
-                            APP_TIMER_MODE_SINGLE_SHOT,
-                            tile_timer_timeout_handler);
+    (void) app_timer_create(&tile_timer_id[i], APP_TIMER_MODE_SINGLE_SHOT, tile_timer_timeout_handler);
   }
+
+  tile_storage_init(); // Initialize storage before initializing features
+
+  tile_features_init();
+  tile_ble_env.conn_handle = BLE_CONN_HANDLE_INVALID;
+
+  /* Audio Config */
+  nrfx_err_t err_code = nrf_drv_ppi_init();
+  APP_ERROR_CHECK(err_code);
+  tile_boot_config_player();
 
   /* Register Tile Service Characteristics */
   tile_gatt_db_init(&tile_ble_env.service);
+  
+  /* Initialize RNG driver */
+  err_code = nrf_drv_rng_init(&rng_config);
+  APP_ERROR_CHECK(err_code);
 
   /* Register a handler for BLE events */
   NRF_SDH_BLE_OBSERVER(m_ble_observer2, APP_BLE_TILE_OBSERVER_PRIO, tile_on_ble_evt, NULL);
-
-  /* Store advertising info from the application, so it can be modified later */
-  if (p_advdata != NULL)
-  {
-    memcpy(&m_adv_data_conf, p_advdata, sizeof(m_adv_data_conf));
-  }
-  mp_advertising = p_advertising;
 
   /* Play Tile Wakeup Song when Tile Service Inits and the Tile Node is not activated.
      This may be disabled depending on the application requirements */
   if(TILE_MODE_ACTIVATED != tile_checked->mode)
   {
-    (void) PlaySong(TILE_SONG_WAKEUP, 3);
+    (void) PlaySong(TILE_SONG_WAKEUP, 3, TILE_SONG_DURATION_ONCE);
   }
 }
-
 
 /**
  * @brief Handle Tile BLE events
@@ -189,6 +138,7 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
   switch (p_evt->header.evt_id)
   {
     case BLE_GAP_EVT_DISCONNECTED:
+      tile_ble_env.conn_handle = BLE_CONN_HANDLE_INVALID;
       tile_unchecked->disconnect_count++;
       (void) tile_gap_disconnected();
       /********************************
@@ -204,7 +154,6 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
       If we advertise 0xFEED, instead of 0xFEEC, this will cause issues after decommissioning, and we will not be able to commission/activate again
       ********************************/
 
-      advertising_update(&m_adv_data_conf, mp_advertising);
       break; // BLE_GAP_EVT_DISCONNECTED
 
     case BLE_GAP_EVT_CONNECTED:
@@ -214,8 +163,8 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
       if(TILE_MODE_ACTIVATED != tile_checked->mode)
       {
         //  when the Tile is not activated, the Interim TileID, Key is used.
-        memcpy(tile_checked->tile_id, interim_tile_id, 8);
-        memcpy(tile_checked->tile_auth_key, interim_tile_key, 16);
+        memcpy(tile_checked->tile_id, interim_tile_id, TILE_ID_LEN);
+        memcpy(tile_checked->tile_auth_key, interim_tile_key, TILE_AUTH_KEY_LEN);
       }
       // Update the TileID Char
       tile_update_tileID_char();
@@ -224,6 +173,7 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
       params.slave_latency = p_evt->evt.gap_evt.params.connected.conn_params.slave_latency;
       params.conn_sup_timeout = p_evt->evt.gap_evt.params.connected.conn_params.conn_sup_timeout;
       (void) tile_gap_connected(&params);
+
       break; // BLE_GAP_EVT_CONNECTED
 
     case BLE_GAP_EVT_CONN_PARAM_UPDATE:
@@ -246,16 +196,7 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
         {
           if (i == TILE_TOA_RSP_CCCD)
           {
-            if (tx_state == TX_QUEUE_EMPTY) // ok to TX
-            {
-              tx_state = TX_QUEUE_FULL; // Set queue full
               tile_toa_transport_ready(p_evt->evt.gatts_evt.params.write.data[0]); // initialite RSP
-              tx_data  = TX_DATA_INVALID; // data not valid
-            }
-            else // queue full, make data pending
-            {
-              tx_data = TX_DATA_VALID; // data valid, but cannot send now
-            }
           }
           else if (i == TILE_TOA_CMD_CHAR)
           {
@@ -274,16 +215,6 @@ void tile_on_ble_evt(ble_evt_t const * p_evt, void * p_context)
 
     case BLE_GATTS_EVT_HVN_TX_COMPLETE:
         tile_toa_response_sent_ok();
-        if (tx_data == TX_DATA_INVALID) // nothing more to tx
-        {
-            tx_state = TX_QUEUE_EMPTY; // Set queue State to Empty
-        }
-        else // Tx Pending data
-        {
-            tx_data = TX_DATA_INVALID;
-            tx_state = TX_QUEUE_FULL;
-            tile_toa_transport_ready(p_evt->evt.gatts_evt.params.write.data[0]); // initialite RSP
-        }
         break;
 
     default:
@@ -307,17 +238,19 @@ static void tile_timer_timeout_handler(void *p_context)
 
 
 /**
- * @brief Retrieve correct 16-bit UUID to advertise, depending on the Tile mode
+ * @brief Retrieve correct 16-bit UUID to advertise and interval on the Tile mode
  */
-uint16_t tile_get_adv_uuid(void)
+void tile_get_adv_params(uint16_t* uuid, uint16_t* interval)
 {
   if(TILE_MODE_ACTIVATED == tile_checked->mode)
   {
-    return TILE_ACTIVATED_UUID;
+    *uuid     = TILE_ACTIVATED_UUID;
+    *interval = tile_checked->adv_int;
   }
   else
   {
-    return TILE_SHIPPING_UUID;
+    *uuid     = TILE_SHIPPING_UUID;
+    *interval = TILE_DEFAULT_ADV_INT_SHIPPING;
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2015 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -550,6 +550,9 @@ ret_code_t pds_peer_data_store(pm_peer_id_t                 peer_id,
 
         case FDS_ERR_NO_SPACE_IN_FLASH:
             return NRF_ERROR_STORAGE_FULL;
+
+        case FDS_ERR_UNALIGNED_ADDR:
+            return NRF_ERROR_INVALID_ADDR;
 
         default:
             NRF_LOG_ERROR("Could not write data to flash. fds_record_{write|update}() returned 0x%x. "\

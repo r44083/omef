@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -47,6 +47,8 @@
 #include "nrf_sdh.h"
 #include "nrf_sdh_soc.h"
 #endif
+
+#include <hal/nrf_wdt.h>
 
 #define NRF_LOG_MODULE_NAME clock
 #if CLOCK_CONFIG_LOG_ENABLED
@@ -121,8 +123,14 @@ static void lfclk_stop(void)
     ASSERT(!nrf_sdh_is_enabled());
 #endif // SOFTDEVICE_PRESENT
 
-    nrfx_clock_lfclk_stop();
-    m_clock_cb.lfclk_on = false;
+    // LFCLK can be started independently by the watchdog and cannot be stopped
+    // by the CLOCK peripheral. This code handles this situation and prevents LFCLK to be stopped.
+    // Otherwise driver can stuck when waiting for the operation to complete.
+    if (!nrf_wdt_started())
+    {
+        nrfx_clock_lfclk_stop();
+        m_clock_cb.lfclk_on = false;
+    }
 }
 
 static void hfclk_start(void)
@@ -184,6 +192,11 @@ ret_code_t nrf_drv_clock_init(void)
 #endif
 
         m_clock_cb.module_initialized = true;
+    }
+
+    if (nrf_wdt_started())
+    {
+        m_clock_cb.lfclk_on = true;
     }
 
     NRF_LOG_INFO("Function: %s, error code: %s.",

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2019 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -147,6 +147,7 @@ typedef struct {
     bool app_timer_created;
     bool hwfc;
     bool rx_halted;
+    bool enabled;
 } nrf_libuarte_async_ctrl_blk_t;
 
 typedef struct {
@@ -154,6 +155,7 @@ typedef struct {
     uint32_t timestamp;
     bool activate;
 } nrf_libuarte_app_timer_ctrl_blk_t;
+
 /**
  * @brief nrf_libuarte_async instance structure (placed in ROM).
  */

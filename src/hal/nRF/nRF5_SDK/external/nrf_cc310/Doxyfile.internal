@@ -1,13 +1,13 @@
-@INCLUDE_PATH        = /build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/
+@INCLUDE_PATH        = /build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/
 @INCLUDE             = doxygen_cc310.conf
 
 PROJECT_NAME         = "ARM TrustZone CryptoCell 310 TEE API Documentation - INTERNAL"
-PROJECT_LOGO         = "/build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/ARM_Logo.png"
-HTML_HEADER          = "/build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/header.html"
-HTML_FOOTER          = "/build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/footer.html"
-HTML_STYLESHEET      = "/build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/sasi_doxygen.css"
+PROJECT_LOGO         = "/build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/ARM_Logo.png"
+HTML_HEADER          = "/build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/header.html"
+HTML_FOOTER          = "/build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/footer.html"
+HTML_STYLESHEET      = "/build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/doxygen/doxywrapper/sasi_doxygen.css"
 
-INPUT                = /build/HP-NG7-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/
+INPUT                = /build/HUSS-CBT4-JOB1/ext/arm_cc310/arm-sw-cc310-1.2.0.1294/
 RECURSIVE            = YES
 EXTRACT_ALL          = YES
 EXTRACT_PRIVATE      = YES

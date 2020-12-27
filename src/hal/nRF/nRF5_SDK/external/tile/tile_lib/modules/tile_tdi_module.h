@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /** @file tile_tdi_module.h
@@ -71,8 +70,11 @@ struct tile_tdi_module
    *  Example: "01.00".
    */
   char *hardware_version;
+  /**
+   * Serial Number -- (TOA_MPS-1) bytes
+   */
+  uint8_t *serial_num;
 };
-
 
 /**
  * Register the TDI module with Tile Library.
@@ -80,4 +82,4 @@ struct tile_tdi_module
 int tile_tdi_register(struct tile_tdi_module *module);
 
 
-#endif
+#endif // TILE_TDI_MODULE_H_

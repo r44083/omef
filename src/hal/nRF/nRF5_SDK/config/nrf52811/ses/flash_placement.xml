@@ -8,9 +8,9 @@
     <ProgramSection alignment="4" load="Yes" name=".text" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_ble_observers" inputsections="*(SORT(.sdh_ble_observers*))" address_symbol="__start_sdh_ble_observers" end_symbol="__stop_sdh_ble_observers" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_soc_observers" inputsections="*(SORT(.sdh_soc_observers*))" address_symbol="__start_sdh_soc_observers" end_symbol="__stop_sdh_soc_observers" />
+    <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_req_observers" inputsections="*(SORT(.sdh_req_observers*))" address_symbol="__start_sdh_req_observers" end_symbol="__stop_sdh_req_observers" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_state_observers" inputsections="*(SORT(.sdh_state_observers*))" address_symbol="__start_sdh_state_observers" end_symbol="__stop_sdh_state_observers" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_stack_observers" inputsections="*(SORT(.sdh_stack_observers*))" address_symbol="__start_sdh_stack_observers" end_symbol="__stop_sdh_stack_observers" />
-    <ProgramSection alignment="4" keep="Yes" load="Yes" name=".sdh_req_observers" inputsections="*(SORT(.sdh_req_observers*))" address_symbol="__start_sdh_req_observers" end_symbol="__stop_sdh_req_observers" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".nrf_queue" inputsections="*(.nrf_queue*)" address_symbol="__start_nrf_queue" end_symbol="__stop_nrf_queue" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".nrf_balloc" inputsections="*(.nrf_balloc*)" address_symbol="__start_nrf_balloc" end_symbol="__stop_nrf_balloc" />
     <ProgramSection alignment="4" keep="Yes" load="Yes" name=".cli_command" inputsections="*(.cli_command*)" address_symbol="__start_cli_command" end_symbol="__stop_cli_command" />
@@ -31,7 +31,7 @@
     <ProgramSection alignment="4" load="Yes" runin=".data_run" name=".data" />
     <ProgramSection alignment="4" load="Yes" runin=".tdata_run" name=".tdata" />
   </MemorySegment>
-  <MemorySegment name="RAM" start="$(RAM_PH_START)" size="$(RAM_PH_SIZE)">
+  <MemorySegment name="RAM1" start="$(RAM_PH_START)" size="$(RAM_PH_SIZE)">
     <ProgramSection load="no" name=".reserved_ram" start="$(RAM_PH_START)" size="$(RAM_START)-$(RAM_PH_START)" />
     <ProgramSection alignment="0x100" load="No" name=".vectors_ram" start="$(RAM_START)" address_symbol="__app_ram_start__"/>
     <ProgramSection alignment="4" keep="Yes" load="No" name=".nrf_sections_run" address_symbol="__start_nrf_sections_run" />

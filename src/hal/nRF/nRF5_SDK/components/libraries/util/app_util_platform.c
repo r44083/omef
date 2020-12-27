@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2014 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -95,7 +95,7 @@ uint8_t privilege_level_get(void)
 #if __CORTEX_M == (0x00U) || defined(_WIN32) || defined(__unix) || defined(__APPLE__)
     /* the Cortex-M0 has no concept of privilege */
     return APP_LEVEL_PRIVILEGED;
-#elif __CORTEX_M == (0x04U)
+#elif __CORTEX_M >= (0x04U)
     uint32_t isr_vector_num = __get_IPSR() & IPSR_ISR_Msk ;
     if (0 == isr_vector_num)
     {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -54,24 +54,20 @@
 
 /**@brief Function for using hardware to protect flash from writing and reading.
  *
- * @details This function will apply write/erase protection to a specific area. Read
- *          protection is optional, decided by \p read_protect. This function uses
- *          the BPROT or ACL peripheral, depending on which is available.
+ * @details This function applies write/erase protection to a specific area, using the BPROT or ACL
+ *          peripheral, depending on which is available.
  *
  * @param[in]  address       The start address of the area to protect. Must be a flash page
  *                           boundary.
  * @param[in]  size          The size of the area to protect, in bytes. Must be a multiple
  *                           of flash page size.
- * @param[in]  read_protect  Whether to protect the area from reading/executing as well.
- *                           This is not available on chips with the BPROT peripheral
- *                           (e.g. nrf52832, nrf52810).
  *
  * @retval  NRF_SUCCESS              Flash protection applied successfully.
  * @retval  NRF_ERROR_NO_MEM         No more ACL instances to use for flash protection.
  * @retval  NRF_ERROR_INVALID_PARAM  Address was out of range or size was not a multiple
  *                                   of flash page size.
  */
-ret_code_t nrf_bootloader_flash_protect(uint32_t address, uint32_t size, bool read_protect);
+ret_code_t nrf_bootloader_flash_protect(uint32_t address, uint32_t size);
 
 /**@brief Function for starting another application (and aborting the current one).
  *

@@ -37,6 +37,7 @@
 #ifndef _SSI_PAL_MUTEX_H
 #define _SSI_PAL_MUTEX_H
 
+#include "ssi_pal_types.h"
 #include "ssi_pal_mutex_plat.h"
 #include "ssi_pal_types_plat.h"
 
@@ -70,7 +71,8 @@ extern "C"
  * @return Zero on success.
  * @return A non-zero value on failure.
  */
-SaSiError_t SaSi_PalMutexCreate(SaSi_PalMutex *pMutexId /*!< [out] Pointer to created mutex handle. */);
+//SaSiError_t SaSi_PalMutexCreate(SaSi_PalMutex *pMutexId /*!< [out] Pointer to created mutex handle. */);
+#define SaSi_PalMutexCreate(a)            (0)
 
 
 /**
@@ -80,7 +82,8 @@ SaSiError_t SaSi_PalMutexCreate(SaSi_PalMutex *pMutexId /*!< [out] Pointer to cr
  * @return Zero on success.
  * @return A non-zero value on failure.
  */
-SaSiError_t SaSi_PalMutexDestroy(SaSi_PalMutex *pMutexId /*!< [in] Pointer to mutex handle. */);
+//SaSiError_t SaSi_PalMutexDestroy(SaSi_PalMutex *pMutexId /*!< [in] Pointer to mutex handle. */);
+#define SaSi_PalMutexDestroy(a)           (0)
 
 
 /**
@@ -90,8 +93,9 @@ SaSiError_t SaSi_PalMutexDestroy(SaSi_PalMutex *pMutexId /*!< [in] Pointer to mu
  * @return Zero on success.
  * @return A non-zero value on failure.
  */
-SaSiError_t SaSi_PalMutexLock (SaSi_PalMutex *pMutexId, /*!< [in] Pointer to Mutex handle. */
-                   uint32_t aTimeOut    /*!< [in] Timeout in mSec, or SASI_INFINITE. */);
+#define SaSi_PalMutexLock(a, b)           (0)
+//SaSiError_t SaSi_PalMutexLock (SaSi_PalMutex *pMutexId, /*!< [in] Pointer to Mutex handle. */
+//                   uint32_t aTimeOut    /*!< [in] Timeout in mSec, or SASI_INFINITE. */);
 
 
 /**
@@ -100,10 +104,37 @@ SaSiError_t SaSi_PalMutexLock (SaSi_PalMutex *pMutexId, /*!< [in] Pointer to Mut
  * @return Zero on success.
  * @return A non-zero value on failure.
  */
-SaSiError_t SaSi_PalMutexUnlock (SaSi_PalMutex *pMutexId/*!< [in] Pointer to Mutex handle. */);
+#define SaSi_PalMutexUnlock(a)            (0)
+//SaSiError_t SaSi_PalMutexUnlock (SaSi_PalMutex *pMutexId/*!< [in] Pointer to Mutex handle. */);
 
 
+/**
+ * @brief This function gets the number of users of CC-hardware
+ *
+ * @return Number of users
+ */
+int32_t SaSi_PalPowerModeStatus(void);
 
+
+/**
+ * @brief This function enables/disables power level
+ *
+ * @return 0 on success, otherwise false
+ */
+uint32_t SaSi_PalPowerSaveModeSelect(bool isPowerSaveMode);
+
+#define CC_SUCCESS SASI_SUCCESS
+#define CC_FALSE SASI_FALSE
+#define CC_TRUE SASI_TRUE
+
+/*! Get ARM Cerberus status. Return number of active registered CC operations */
+#define CC_STATUS_GET   SaSi_PalPowerSaveModeStatus()
+
+/*! Notify ARM Cerberus is active. */
+#define CC_IS_WAKE      SaSi_PalPowerSaveModeSelect(CC_FALSE)
+
+/*! Notify ARM Cerberus is idle. */
+#define CC_IS_IDLE      SaSi_PalPowerSaveModeSelect(CC_TRUE)
 
 
 #ifdef __cplusplus

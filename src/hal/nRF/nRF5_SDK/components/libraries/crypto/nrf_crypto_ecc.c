@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -1276,6 +1276,7 @@ ret_code_t nrf_crypto_ecc_byte_order_invert(
         integer_size = p_curve_info->raw_private_key_size;
     }
 
+    VERIFY_TRUE(raw_data_size > 0, NRF_ERROR_CRYPTO_INPUT_LENGTH);
     VERIFY_TRUE(p_raw_input != NULL, NRF_ERROR_CRYPTO_INPUT_NULL);
     VERIFY_TRUE(p_raw_output != NULL, NRF_ERROR_CRYPTO_OUTPUT_NULL);
 

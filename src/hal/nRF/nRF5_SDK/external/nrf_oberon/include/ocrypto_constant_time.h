@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2019 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -56,12 +56,11 @@
 #ifndef OCRYPTO_CONSTANT_TIME_H
 #define OCRYPTO_CONSTANT_TIME_H
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stddef.h>
-
 
 /**
  * Variable length comparison.
@@ -107,6 +106,6 @@ void ocrypto_constant_time_fill_zero(void *x, size_t length);
 }
 #endif
 
-#endif
+#endif /* #ifndef OCRYPTO_CONSTANT_TIME_H */
 
 /** @} */

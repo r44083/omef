@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -106,6 +106,15 @@ typedef struct
 } pipe_info_t;
 
 
+/* @brief Structure used by the PRX to organize ACK payloads for multiple pipes. */ 
+typedef struct
+{
+    nrf_esb_payload_t * p_payload;                        /**< Pointer to the ACK payload. */
+    bool                in_use;                           /**< Value used to determine if the current payload pointer is used. */
+    struct nrf_esb_payload_random_access_buf_wrapper_t * p_next; /**< Pointer to the next ACK payload queued on the same pipe. */
+} nrf_esb_payload_random_access_buf_wrapper_t;
+
+
 /* @brief  First-in, first-out queue of payloads to be transmitted. */
 typedef struct
 {
@@ -168,6 +177,10 @@ static nrf_esb_payload_rx_fifo_t    m_rx_fifo;
 // Payload buffers
 static  uint8_t                     m_tx_payload_buffer[NRF_ESB_MAX_PAYLOAD_LENGTH + 2];
 static  uint8_t                     m_rx_payload_buffer[NRF_ESB_MAX_PAYLOAD_LENGTH + 2];
+
+// Random access buffer variables for better ACK payload handling
+nrf_esb_payload_random_access_buf_wrapper_t m_ack_pl_container[NRF_ESB_TX_FIFO_SIZE];
+nrf_esb_payload_random_access_buf_wrapper_t * m_ack_pl_container_entry_point_pr_pipe[NRF_ESB_PIPE_COUNT];
 
 // Run time variables
 static volatile uint32_t            m_interrupt_flags = 0;
@@ -455,6 +468,17 @@ static void initialize_fifos()
     for (int i = 0; i < NRF_ESB_RX_FIFO_SIZE; i++)
     {
         m_rx_fifo.p_payload[i] = &m_rx_fifo_payload[i];
+    }
+    
+    for (int i = 0; i < NRF_ESB_TX_FIFO_SIZE; i++)
+    {
+        m_ack_pl_container[i].p_payload = &m_tx_fifo_payload[i];
+        m_ack_pl_container[i].in_use = false;
+        m_ack_pl_container[i].p_next = 0;
+    }
+    for (int i = 0; i < NRF_ESB_PIPE_COUNT; i++)
+    {
+        m_ack_pl_container_entry_point_pr_pipe[i] = 0;
     }
 }
 
@@ -813,35 +837,44 @@ static void on_radio_disabled_rx(void)
         {
             case NRF_ESB_PROTOCOL_ESB_DPL:
                 {
-                    if (m_tx_fifo.count > 0 &&
-                        (m_tx_fifo.p_payload[m_tx_fifo.exit_point]->pipe == NRF_RADIO->RXMATCH)
-                       )
+                    if (m_tx_fifo.count > 0 && m_ack_pl_container_entry_point_pr_pipe[NRF_RADIO->RXMATCH] != 0)
                     {
+                        mp_current_payload = m_ack_pl_container_entry_point_pr_pipe[NRF_RADIO->RXMATCH]->p_payload;
+
                         // Pipe stays in ACK with payload until TX FIFO is empty
                         // Do not report TX success on first ack payload or retransmit
                         if (p_pipe_info->ack_payload == true && !retransmit_payload)
                         {
-                            if (++m_tx_fifo.exit_point >= NRF_ESB_TX_FIFO_SIZE)
-                            {
-                                m_tx_fifo.exit_point = 0;
-                            }
-
+                            uint32_t pipe = NRF_RADIO->RXMATCH;
+                            m_ack_pl_container_entry_point_pr_pipe[pipe]->in_use = false;
+                            m_ack_pl_container_entry_point_pr_pipe[pipe] = (nrf_esb_payload_random_access_buf_wrapper_t *)m_ack_pl_container_entry_point_pr_pipe[pipe]->p_next;
                             m_tx_fifo.count--;
+                            if (m_tx_fifo.count > 0 && m_ack_pl_container_entry_point_pr_pipe[pipe] != 0)
+                            {
+                                 mp_current_payload = m_ack_pl_container_entry_point_pr_pipe[pipe]->p_payload;
+                            }
+                            else mp_current_payload = 0;
 
                             // ACK payloads also require TX_DS
                             // (page 40 of the 'nRF24LE1_Product_Specification_rev1_6.pdf').
                             m_interrupt_flags |= NRF_ESB_INT_TX_SUCCESS_MSK;
                         }
 
-                        p_pipe_info->ack_payload = true;
-
-                        mp_current_payload = m_tx_fifo.p_payload[m_tx_fifo.exit_point];
-
-                        update_rf_payload_format(mp_current_payload->length);
-                        m_tx_payload_buffer[0] = mp_current_payload->length;
-                        memcpy(&m_tx_payload_buffer[2],
-                               mp_current_payload->data,
-                               mp_current_payload->length);
+                        if(mp_current_payload != 0)
+                        {
+                            p_pipe_info->ack_payload = true;
+                            update_rf_payload_format(mp_current_payload->length);
+                            m_tx_payload_buffer[0] = mp_current_payload->length;
+                            memcpy(&m_tx_payload_buffer[2],
+                                   mp_current_payload->data,
+                                   mp_current_payload->length);
+                        }
+                        else
+                        {
+                            p_pipe_info->ack_payload = false;
+                            update_rf_payload_format(0);
+                            m_tx_payload_buffer[0] = 0;
+                        }
                     }
                     else
                     {
@@ -1093,6 +1126,17 @@ void ESB_EVT_IRQHandler(void)
     }
 }
 
+
+static nrf_esb_payload_random_access_buf_wrapper_t *find_free_payload_cont(void)
+{
+    for (int i = 0; i < NRF_ESB_TX_FIFO_SIZE; i++)
+    {
+        if(!m_ack_pl_container[i].in_use) return &m_ack_pl_container[i];
+    }
+    return 0;
+}
+
+
 uint32_t nrf_esb_write_payload(nrf_esb_payload_t const * p_payload)
 {
     VERIFY_TRUE(m_esb_initialized, NRF_ERROR_INVALID_STATE);
@@ -1103,17 +1147,48 @@ uint32_t nrf_esb_write_payload(nrf_esb_payload_t const * p_payload)
 
     DISABLE_RF_IRQ();
 
-    memcpy(m_tx_fifo.p_payload[m_tx_fifo.entry_point], p_payload, sizeof(nrf_esb_payload_t));
-
-    m_pids[p_payload->pipe] = (m_pids[p_payload->pipe] + 1) % (NRF_ESB_PID_MAX + 1);
-    m_tx_fifo.p_payload[m_tx_fifo.entry_point]->pid = m_pids[p_payload->pipe];
-
-    if (++m_tx_fifo.entry_point >= NRF_ESB_TX_FIFO_SIZE)
+    if (m_config_local.mode == NRF_ESB_MODE_PTX)
     {
-        m_tx_fifo.entry_point = 0;
-    }
+        memcpy(m_tx_fifo.p_payload[m_tx_fifo.entry_point], p_payload, sizeof(nrf_esb_payload_t));
 
-    m_tx_fifo.count++;
+        m_pids[p_payload->pipe] = (m_pids[p_payload->pipe] + 1) % (NRF_ESB_PID_MAX + 1);
+        m_tx_fifo.p_payload[m_tx_fifo.entry_point]->pid = m_pids[p_payload->pipe];
+
+        if (++m_tx_fifo.entry_point >= NRF_ESB_TX_FIFO_SIZE)
+        {
+            m_tx_fifo.entry_point = 0;
+        }
+
+        m_tx_fifo.count++;
+    }
+    else
+    {
+        nrf_esb_payload_random_access_buf_wrapper_t *new_ack_payload;
+        if((new_ack_payload = find_free_payload_cont()) != 0)
+        {
+            new_ack_payload->in_use = true;
+            new_ack_payload->p_next = 0;
+            memcpy(new_ack_payload->p_payload, p_payload, sizeof(nrf_esb_payload_t));
+
+            m_pids[p_payload->pipe] = (m_pids[p_payload->pipe] + 1) % (NRF_ESB_PID_MAX + 1);
+            new_ack_payload->p_payload->pid = m_pids[p_payload->pipe];
+
+            if(m_ack_pl_container_entry_point_pr_pipe[p_payload->pipe] == 0)
+            {
+                m_ack_pl_container_entry_point_pr_pipe[p_payload->pipe] = new_ack_payload;
+            }
+            else
+            {
+                nrf_esb_payload_random_access_buf_wrapper_t *list_iterator = m_ack_pl_container_entry_point_pr_pipe[p_payload->pipe];
+                while(list_iterator->p_next != 0)
+                {
+                    list_iterator = (nrf_esb_payload_random_access_buf_wrapper_t *)list_iterator->p_next;
+                }
+                list_iterator->p_next = (struct nrf_esb_payload_random_access_buf_wrapper_t *)new_ack_payload;
+            }
+            m_tx_fifo.count++;
+        }
+    }
 
     ENABLE_RF_IRQ();
 

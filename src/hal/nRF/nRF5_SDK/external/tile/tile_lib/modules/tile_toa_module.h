@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /** @file tile_toa_module.h
@@ -140,17 +139,18 @@ struct tile_toa_module
   int (*send_response)(uint8_t *data, uint16_t len);
 
   /**
-   * Optional callback called when an authentication is happenning (can be set to NULL).
+   * Optional callback called when an association is happenning (can be set to NULL).
    *  It is mostly needed for Commissioning Tiles using an Interim TileID, Key.
    *
-   * @param[in]  aco:                 The 24-bit Authentication Cypher Offset generated
+   * @param[in]  tile_id: 8-byte unique tile identification code.
+   * @param[in]  tile_auth_key: 16-byte authentication key.
    * @param[in]  authorization_type:  Pointer to authorization type.
    *
    * @param[out] authorization_type:  set to the right value if an authorization is required (ie 1 for Button Press).
    *
    * @return See @ref TILE_ERROR_CODES.
    */
-  int (*associate)(uint8_t* aco, uint8_t* authorization_type);
+  int (*associate)(uint8_t* tile_id, uint8_t* tile_auth_key, uint8_t* authorization_type);
 };
 
 
@@ -222,7 +222,7 @@ enum TOA_ERROR_CODES
   TOA_RSP_ERROR_SECURITY    = 0x01,
   /**< Error Code sent by TOA Server when required security level for the command is not met (like authentication)
   Format:
-  @ref TOA_RSP_ERROR_SECURITY Code | The @ref TOA_CMD that failed
+  @ref TOA_RSP_ERROR_SECURITY Code | The TOA_CMD that failed
   ---------------------------------|-----------------------------
   1 Byte                           |  1 Byte
   */
@@ -230,7 +230,7 @@ enum TOA_ERROR_CODES
   TOA_RSP_ERROR_UNSUPPORTED = 0x02,
   /**< Error Code sent by TOA Server when an unsupported TOA Command is received
   Format:
-  @ref TOA_RSP_ERROR_UNSUPPORTED Code | The @ref TOA_CMD that failed
+  @ref TOA_RSP_ERROR_UNSUPPORTED Code | The TOA_CMD that failed
   ------------------------------------|-----------------------------
   1 Byte                              |  1 Byte
   */
@@ -239,7 +239,7 @@ enum TOA_ERROR_CODES
   /**< Error Code sent by TOA Server when a TOA Command with wrong parameters is received
   Format:
   
-  @ref TOA_RSP_ERROR_PARAMETERS Code | The @ref TOA_CMD that failed
+  @ref TOA_RSP_ERROR_PARAMETERS Code | The TOA_CMD that failed
   -----------------------------------|------------------------------
   1 Byte                             |  1 Byte
   */
@@ -248,7 +248,7 @@ enum TOA_ERROR_CODES
   /**< Error Code sent by TOA Server when 1 or more Responses were dropped, most likely due to an overflow.<br>
   The Client should close the connection when this happens.
   Format:
-  @ref TOA_RSP_ERROR_DROPPED_RSP Code  | The first @ref TOA_RSP that was dropped
+  @ref TOA_RSP_ERROR_DROPPED_RSP Code  | The first TOA_RSP that was dropped
   -------------------------------------|----------------------------------------
   1 Byte                               |  1 Byte
   */
@@ -257,7 +257,7 @@ enum TOA_ERROR_CODES
   /**< Error Code sent by a TOA Server when there are no CIDs available for allocation.
 
   Format:
-  @ref TOA_RSP_ERROR_NO_CID_AVAILABLE | @ref TOA_CMD_OPEN_CHANNEL
+  @ref TOA_RSP_ERROR_NO_CID_AVAILABLE | TOA_CMD_OPEN_CHANNEL
   ------------------------------------|--------------------------
   1 Byte                              | 1 Byte
   */
@@ -265,7 +265,7 @@ enum TOA_ERROR_CODES
   TOA_RSP_ERROR_AUTHORIZATION = 0x06,
   /**< Error Code sent by a TOA Server when the required authorization level for the command is not met
   Format:
-  @ref TOA_RSP_ERROR_AUTHORIZATION Code | The @ref TOA_CMD that failed | The required Authorization Type
+  @ref TOA_RSP_ERROR_AUTHORIZATION Code | The TOA_CMD that failed | The required Authorization Type
   --------------------------------------|------------------------------|--------------------------------
   1 Byte                                |  1 Byte                      | 1 Byte (value 1 for Button Press)
   */
@@ -273,7 +273,7 @@ enum TOA_ERROR_CODES
   TOA_RSP_SERVICE_UNAVAILABLE = 0x07,
   /**< Error Code sent by a TOA Server when the required service is unavailable (i.e. user trigger)
   Format:
-  @ref TOA_RSP_SERVICE_UNAVAILABLE Code | The @ref TOA_CMD that failed
+  @ref TOA_RSP_SERVICE_UNAVAILABLE Code | The TOA_CMD that failed
   --------------------------------------|-----------------------------
   1 Byte                                |  1 Byte
   */

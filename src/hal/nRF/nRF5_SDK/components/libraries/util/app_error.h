@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2013 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -88,7 +88,7 @@ typedef struct
  */
 typedef struct
 {
-    uint16_t        line_num;    /**< The line number where the error occurred. */
+    uint32_t        line_num;    /**< The line number where the error occurred. */
     uint8_t const * p_file_name; /**< The file in which the error occurred. */
 } assert_info_t;
 

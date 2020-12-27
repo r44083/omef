@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -78,7 +78,10 @@ static uint32_t image_copy(uint32_t dst_addr,
 
     ASSERT(src_addr >= dst_addr);
     ASSERT(progress_update_step > 0);
-    ASSERT((dst_addr % CODE_PAGE_SIZE) == 0);
+    if (size != 0)
+    {
+        ASSERT((dst_addr % CODE_PAGE_SIZE) == 0);
+    }
 
     uint32_t max_safe_progress_upd_step = (src_addr - dst_addr)/CODE_PAGE_SIZE;
     ASSERT(max_safe_progress_upd_step > 0);

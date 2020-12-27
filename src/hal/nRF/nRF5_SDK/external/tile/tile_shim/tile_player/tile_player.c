@@ -17,12 +17,19 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
+ */
+
+/**
+ * @file tile_player.c
+ * @brief Tile player for Nordic Platform
  */
 
 #include "sdk_common.h"
 #if NRF_MODULE_ENABLED(TILE_SUPPORT)
 #include "tile_config.h"
+#include "tile_lib.h"
+
+uint8_t g_FindActivate_SongPlayed = 0;
 
 #if TILE_ENABLE_PLAYER
 
@@ -31,26 +38,25 @@
 
 #include "tile_player.h"
 #include "tile_storage/tile_storage.h"
-#include "tile_lib.h"
 #include "tile_service/tile_service.h"
+#include "tile_features/tile_features.h"
 
 #include "app_timer.h"
-//#include "app_timer_appsh.h"
 #include "nrf_drv_gpiote.h"
 #include "nrf_drv_timer.h"
 #include "nrf_drv_ppi.h"
 #include "nrfx_ppi.h"
+#include "nrf_log.h"
 
-#include "boards.h"
-
-/**
- * @file tile_player.c
- * @brief Tile player for Nordic Platform
- */
+static nrf_ppi_channel_t ppi_channel1;
+uint32_t compare_evt_addr1;
+uint32_t gpiote_task_addr1;
+/* Set PIN_PIEZO for toggle on timer event */
+nrf_drv_gpiote_out_config_t config1 = GPIOTE_CONFIG_OUT_TASK_TOGGLE(false);
 
 /* Convert a frequency into number of microseconds for a half-pulse */
 #define CONV(n) (1000000 / (n) / 2)
-
+uint8_t g_inbetween = 0;
 
 /* Some defines for accessing the note array properly */
 #define NOTE_ARRAY_BASE_NOTE (C3)
@@ -227,14 +233,18 @@ FixedSong18,
 FixedSong19,
 };
 
-static const uint8_t *p_current_song = NULL;
-static const uint8_t *p_next_song = NULL;
 static uint8_t startup_sequence = 0;
-static nrf_drv_timer_t timer = NRF_DRV_TIMER_INSTANCE(PLAYER_TIMER_ID);
+static nrf_drv_timer_t player_timer = NRF_DRV_TIMER_INSTANCE(PLAYER_TIMER_ID);
 APP_TIMER_DEF(song_timer_id);
+APP_TIMER_DEF(song_timer_loop);
+
 
 static void NextNote(void);
 static void StartupPlayer(void);
+
+static song_t current_song          = {0};
+static song_t next_song             = {0};
+static uint8_t song_loop_flag       = 1; 
 
 static void song_timer_handler(void *p_context)
 {
@@ -247,6 +257,47 @@ static void song_timer_handler(void *p_context)
   {
     NextNote();
   }
+}
+
+/**
+* @brief song_duration_timeout_handler
+* This is the interrupt handler for the song duration timer. 
+* The idea is that the variable song_loop_flag is set to 1 to ensure
+* normal song_done() operation at all times. It is only set to 0 if 
+* The song is requested to play forever. If it is requested to play for a 
+* fixed duration, the timer allows the song_loop_flag to stay 0 until it times out.
+*/
+
+static void song_duration_timeout_handler(void *p_context)
+{
+  song_loop_flag = 1;
+}
+
+/**
+ * @brief Player Boot Config
+ * Allocate ppi Channels for Player once at Boot:
+ *   Call once at Boot, so we don't keep on assigning it again and again:
+ *     There are limited number of channels, and every channel alloc from same place does not alloc a new channel
+ *     It returns error: channel already allocated and moves on without apparent immediate problem, but assigned channels can go out of context, 
+ *     allocate more than needed channels, and then stop playing song/advertise in some scenarios
+ *     So do not call alloc again and again
+ */
+void tile_boot_config_player(void)
+{
+  nrfx_err_t err_code;
+
+  /* Initialize the gpiote driver if it isn't already */
+  if(!nrf_drv_gpiote_is_init())
+  {
+    err_code = nrf_drv_gpiote_init();
+    APP_ERROR_CHECK(err_code);
+  }
+  err_code = nrf_drv_ppi_channel_alloc(&ppi_channel1);
+  NRF_LOG_INFO("ppi channel 1 alloc gave %u, &ppi_channel1: 0x%08x",err_code,&ppi_channel1);
+  APP_ERROR_CHECK(err_code);
+
+  err_code = nrf_drv_gpiote_out_init(PIN_PIEZO, &config1);
+  APP_ERROR_CHECK(err_code);
 }
 
 /**
@@ -265,7 +316,7 @@ static void ConfigureBuzzer()
     (void) nrf_drv_gpiote_out_init(PIN_PIEZO, &config);
 
     /* Tie timer events to piezo toggle */
-    compare_evt_addr = nrf_drv_timer_event_address_get(&timer, NRF_TIMER_EVENT_COMPARE0);
+    compare_evt_addr = nrf_drv_timer_event_address_get(&player_timer, NRF_TIMER_EVENT_COMPARE0);
     gpiote_task_addr = nrf_drv_gpiote_out_task_addr_get(PIN_PIEZO);
     (void) nrf_drv_ppi_channel_assign(ppi_channel, compare_evt_addr, gpiote_task_addr);
     (void) nrf_drv_ppi_channel_enable(ppi_channel);
@@ -277,6 +328,30 @@ static void ConfigureBuzzer()
 static void StartupPlayer()
 {
     startup_sequence = 0;
+
+    /* This is the start of the Find Default Song*/
+    if (current_song.p_firstNote == tile_song_array[TILE_SONG_FIND])
+    {
+      g_FindActivate_SongPlayed = 1;
+    }
+    
+    /* find length of the song */
+    if (current_song.duration == TILE_SONG_DURATION_ONCE)
+    {
+      song_loop_flag = 1;
+    }
+    else if (current_song.duration == TILE_SONG_DURATION_FOREVER)
+    {
+      song_loop_flag = 0;
+    }
+    else
+    {
+      /* Create the timer for Song Loop */
+      NRF_LOG_INFO("Song Request received for duration - %d", current_song.duration);
+      song_loop_flag = 0;
+      (void) app_timer_start(song_timer_loop, APP_TIMER_TICKS(current_song.duration * 1000), NULL);
+    }
+
     nrf_gpio_pin_clear(PIN_PIEZO);
     nrf_drv_gpiote_out_task_enable(PIN_PIEZO);
     (void) app_timer_start(song_timer_id, APP_TIMER_TICKS(10), NULL);
@@ -302,12 +377,15 @@ void timer_dummy_handler(nrf_timer_event_t event_type, void * p_context){}
  */
 static void SongDone(void)
 {
+  NRF_LOG_INFO("Song Done");
   ShutdownPlayer();
-  if(NULL != p_next_song)
+  (void) app_timer_stop(song_timer_loop);
+  g_inbetween = 0;
+  if(NULL != next_song.p_firstNote)
   {
     /* Start enqueued Song */
-    p_current_song = p_next_song;
-    p_next_song = NULL;
+    current_song = next_song;
+    memset(&next_song,0,sizeof(song_t));
     startup_sequence = 1;
     /* Give 200 ms between songs */
     (void) app_timer_start(song_timer_id, APP_TIMER_TICKS(200), NULL);
@@ -315,35 +393,74 @@ static void SongDone(void)
   else
   {
     /* Shut everything Off */
-    nrf_drv_timer_disable(&timer);
+    nrf_drv_timer_disable(&player_timer);
     (void) app_timer_stop(song_timer_id);
 
     UninitPlayer();
 
-    p_current_song = NULL;
+    /********************************************************/
+    memset(&current_song,0,sizeof(song_t));
+    
+    if (g_FindActivate_SongPlayed == 1)
+    {
+      if( (nrf_fstorage_is_busy(&app_data_bank0) == false) && (nrf_fstorage_is_busy(&app_data_bank1) == false) ) // If flash activity on-going, wait
+      {
+        if (BLE_CONN_HANDLE_INVALID   == tile_ble_env.conn_handle) // Disconnected
+        {
+          /* These will auto clear to 0 because of reboot, but still add it for logical purposes */
+          g_FindActivate_SongPlayed = 0;
+        }
+      }
+    }
   }
 }
-
 
 /**
  * @brief Play the next Note
  */
 static void NextNote(void)
 {
-  uint8_t note             = *p_current_song++;
-  uint8_t duration         = *p_current_song++;
+  uint8_t note             = *current_song.p_currentNote++;
+  uint8_t duration         = *current_song.p_currentNote++;
 
   tile_unchecked->piezoMs += duration;
   
-  nrf_drv_timer_disable(&timer);
-
+  nrf_drv_timer_disable(&player_timer);
   if(REST == note && REST == duration)
   {
+    NRF_LOG_INFO("Song Duration: %d\r\n",tile_unchecked->piezoMs);
+
+    if(song_loop_flag == 1) 
+    {
       /* End of song reached */
       SongDone();
       return;
+    }
+    else
+    {
+      if (g_inbetween == 0)
+      {
+        NRF_LOG_INFO("song loop len is Non0, g_inbetween is 0");
+        /* Give 200 ms between songs*/
+        (void) app_timer_start(song_timer_id, APP_TIMER_TICKS(200), NULL);
+        current_song.p_currentNote -=2;
+        g_inbetween = 1;
+      }
+      else
+      {
+        NRF_LOG_INFO("song loop len is Non0, g_inbetween is 1");
+        /* Start one more loop */
+        current_song.p_currentNote = current_song.p_firstNote;
+        note                       = *current_song.p_currentNote++;
+        duration                   = *current_song.p_currentNote++;
+        tile_unchecked->piezoMs   += duration;
+        g_inbetween = 0;
+      }
+    }
   }
-  else if(REST == note)
+
+  /* We come here if we are in the middle of a song, or we are starting a new loop */
+  if(REST == note)
   {
     /* reached a rest, disable the piezo pin and put it down */
     nrf_drv_gpiote_out_task_disable(PIN_PIEZO);
@@ -352,43 +469,40 @@ static void NextNote(void)
   else
   {
     /* reached a note, set the Piezo Pin to toggle at the proper frequency */
-    nrf_drv_timer_clear(&timer);
-    nrf_drv_timer_extended_compare(&timer, GPIOTE_SOUND_CHANNEL,
-    nrf_drv_timer_us_to_ticks(&timer, notes[NOTE_ARRAY_INDEX(note)]), NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
+    nrf_drv_timer_clear(&player_timer);
+    nrf_drv_timer_extended_compare(&player_timer, GPIOTE_SOUND_CHANNEL, nrf_drv_timer_us_to_ticks(&player_timer, notes[NOTE_ARRAY_INDEX(note)]), NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
     nrf_drv_gpiote_out_task_enable(PIN_PIEZO);
-    nrf_drv_timer_enable(&timer);
+
+    if (nrf_drv_timer_is_enabled(&player_timer) == 0)
+    nrf_drv_timer_enable(&player_timer);
   }
 
-  (void) app_timer_start(song_timer_id, APP_TIMER_TICKS(duration*10), NULL);
+  if (g_inbetween == 0)
+  {
+    (void) app_timer_start(song_timer_id, APP_TIMER_TICKS(duration*10), NULL);
+  }
 }
-
 
 /**
  * @brief Initialize the Tile player
  */
 void InitPlayer(void)
 {
-    /* The Tile player uses GPIOTE to toggle the piezo pin, and
-     * Timer1 triggers the toggle using PPI */
+  /* The Tile player uses GPIOTE to toggle the piezo pin, and
+   * Timer1 triggers the toggle using PPI */
+  nrf_drv_timer_config_t timer_config = NRF_DRV_TIMER_DEFAULT_CONFIG;
 
-    /* Configure PPI */
-    (void) nrf_drv_ppi_init();
+  /* Configure timer */
+  (void) nrf_drv_timer_init(&player_timer, &timer_config, timer_dummy_handler);
 
-    /* Configure timer */
-    (void) nrf_drv_timer_init(&timer, NULL, timer_dummy_handler);
+  ConfigureBuzzer();
 
-    /* Configure GPIOTE. Check if initialized, otherwise will crash */
-    if(!nrf_drv_gpiote_is_init())
-    {
-        (void) nrf_drv_gpiote_init();
-    }
+  /* Create the timer for switching frequencies */
+  (void) app_timer_create(&song_timer_id, APP_TIMER_MODE_SINGLE_SHOT, song_timer_handler);
 
-    ConfigureBuzzer();
+  /* Create the timer for Song Loop */
+  (void) app_timer_create(&song_timer_loop, APP_TIMER_MODE_SINGLE_SHOT, song_duration_timeout_handler);
 
-    /* Create the timer for switching frequencies */
-    (void) app_timer_create(&song_timer_id, APP_TIMER_MODE_SINGLE_SHOT, song_timer_handler);
-
-    ShutdownPlayer();
 }
 
 /**
@@ -397,30 +511,51 @@ void InitPlayer(void)
  */
 void UninitPlayer(void)
 {
-  /* Do not call nrf_drv_ppi_uninit() or nrf_drv_gpiote_uninit() as they are used by other modules like FEM and Button */
-  nrf_drv_timer_uninit(&timer);
-}
+  ret_code_t err_code;
+  NRF_LOG_INFO("UninitPlayer");
+  
+  /* Do not call nrf_drv_ppi_uninit() or nrf_drv_gpiote_uninit() as they are used by other modules */
+  nrf_drv_timer_uninit(&player_timer);
 
+  err_code = nrf_drv_ppi_channel_disable(ppi_channel1);
+  if (err_code != 0)
+    NRF_LOG_INFO("ppi channel 1 disable gave error %u",err_code);
+  // No Need to assert if Disable failed
+}
 
 /**
  * @brief Play a song. Queue song if necessary
  */
-int PlaySong(uint8_t number, uint8_t strength)
+int PlaySong(uint8_t number, uint8_t strength, uint8_t duration)
 {
-  if(number < TILE_SONG_MAX)
+
+  NRF_LOG_INFO("Play Song Request received");
+
+  if(strength == 0 || duration == 0)
   {
-    if(NULL != p_current_song && NULL == p_next_song)
+    return TILE_ERROR_SUCCESS;
+  }
+
+  if(number < ARRAY_SIZE(tile_song_array))
+  {
+    if((NULL != current_song.p_firstNote) && (NULL == next_song.p_firstNote))
     {
-      /* enqueue the song */
-            //lint -save -e661
-      p_next_song = tile_song_array[number];
+      /* A song is currently playing but there is NO enqueued song */
+      /* SO enqueue the song */
+
+      NRF_LOG_INFO("Enqueue Default song");
+      next_song   = (song_t) { tile_song_array[number], tile_song_array[number], duration};
     }
-    else if(NULL == p_current_song)
+    else if(NULL == current_song.p_firstNote)
     {
       /* no song is currently playing, start it right away */
       InitPlayer();
-      p_current_song = tile_song_array[number];
-            //lint -restore
+
+      song_loop_flag = 1;
+
+      NRF_LOG_INFO("Play Default song");
+      current_song = (song_t) { tile_song_array[number], tile_song_array[number], duration};
+
       startup_sequence = 1;
       StartupPlayer();
     }
@@ -429,7 +564,7 @@ int PlaySong(uint8_t number, uint8_t strength)
       /* If queue is full, ignore */
     }
   }
-  return TILE_SUCCESS;
+  return TILE_ERROR_SUCCESS;
 }
 
 /**
@@ -438,16 +573,17 @@ int PlaySong(uint8_t number, uint8_t strength)
 int StopSong(void)
 {
   /* Destroy the queue */
-  if(p_next_song != NULL)
+  if(next_song.p_firstNote != NULL)
   {
-    p_next_song = NULL;
+    memset(&next_song,0,sizeof(song_t));
   }
   /* Turn off the songs */
-  if(p_current_song != NULL)
+  if(current_song.p_firstNote != NULL)
   {
+    song_loop_flag = 1;
     SongDone();
   }
-  return TILE_SUCCESS;
+  return TILE_ERROR_SUCCESS;
 }
 
 /**
@@ -455,8 +591,33 @@ int StopSong(void)
  */
 bool SongPlaying(void)
 {
-  return p_current_song != NULL;
+  return current_song.p_firstNote != NULL;
 }
+
+/**
+ * @brief Return whether a Find song is playing or not
+ */
+bool CheckFindSong(void)
+{
+  /*Return true if the current song note matches to the TILE_SONG_FIND note*/
+  if ( (current_song.p_firstNote != NULL) && 
+      (current_song.p_firstNote == tile_song_array[TILE_SONG_FIND]) )
+  {	
+    return true; 
+  } 
+
+  return false; 
+}
+
+
+#else
+
+void InitPlayer(void){}
+void UninitPlayer(void){}
+int PlaySong(uint8_t number, uint8_t strength, uint8_t duration){return TILE_ERROR_SUCCESS;}
+int StopSong(void){return TILE_ERROR_SUCCESS;}
+bool SongPlaying(void){return false;}
+void tile_boot_config_player(void){}
 
 #endif // TILE_ENABLE_PLAYER
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -296,7 +296,7 @@ static void on_compare_evt(drv_rtc_t const * const  p_instance)
     {
         /* If assert fails it suggests that safe window should be increased. */
         ASSERT(app_timer_cnt_diff_compute(drv_rtc_counter_get(p_instance),
-                                          mp_active_timer->end_val & RTC_COUNTER_COUNTER_Msk) < APP_TIMER_SAFE_WINDOW);
+                                          drv_rtc_compare_get(p_instance, 0)) < APP_TIMER_SAFE_WINDOW);
 
         NRF_LOG_INST_DEBUG(mp_active_timer->p_log, "Compare EVT");
         UNUSED_RETURN_VALUE(timer_expire(mp_active_timer));

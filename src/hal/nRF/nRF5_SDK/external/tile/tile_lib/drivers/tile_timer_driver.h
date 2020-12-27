@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /** @file tile_timer_driver.h
@@ -44,20 +43,11 @@ enum TILE_TIMER_IDS
   TILE_CONNECTION_TIMER,
   TILE_AUTHENTICATION_TIMER,
   TILE_TDT_DOUBLETAP_TIMER,
-  TILE_TDT_STI_TIMER,
-  TILE_TDT_STD_TIMER,
-  TILE_TDT_LT_TIMER,
-  TILE_TDT_DT_TIMER,
   TILE_TDT_HDC_TIMER,
   TILE_TCU_PARAM_UPDATE_TIMER,
   TILE_TKA_TIMER1,
   TILE_TKA_TIMER2,
   TILE_TKA_TIMER3,
-  TILE_TKA_TIMER4,
-  TILE_TKA_TIMER5,
-  TILE_TKA_TIMER6,
-  TILE_TKA_TIMER7,
-  TILE_TKA_TIMER8,
   TILE_TEST_TIMER1,
   TILE_TEST_TIMER2,
   TILE_TEST_TIMER3,
@@ -66,6 +56,7 @@ enum TILE_TIMER_IDS
   TILE_TEST_TIMER6,
   TILE_TEST_TIMER7,
   TILE_TEST_TIMER8,
+  TILE_TILEID_COUNTER_TIMER,
   TILE_MAX_TIMERS /* < Number of timers used by Tile Lib. */
 };
 
@@ -94,4 +85,5 @@ int tile_timer_register(struct tile_timer_driver *driver);
  */
 int tile_timer_expired(uint8_t timer_id);
 
-#endif
+
+#endif // TILE_TIMER_DRIVER_H_

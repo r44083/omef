@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -135,7 +135,7 @@ STATIC_ASSERT(NRF_ESB_PIPE_COUNT <= 8);
 #define     ESB_EVT_IRQ                         SWI0_IRQn           //!< The ESB event IRQ number when running on an nRF5 device.
 #define     ESB_EVT_IRQHandler                  SWI0_IRQHandler     //!< The handler for @ref ESB_EVT_IRQ when running on an nRF5 device.
 
-#if defined(NRF52)
+#if defined(NRF52_SERIES)
 #define ESB_IRQ_PRIORITY_MSK                    0x07                //!< The mask used to enforce a valid IRQ priority.
 #else
 #define ESB_IRQ_PRIORITY_MSK                    0x03                //!< The mask used to enforce a valid IRQ priority.

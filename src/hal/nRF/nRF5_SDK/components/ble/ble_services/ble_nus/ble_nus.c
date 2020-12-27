@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2012 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -202,7 +202,7 @@ static void on_hvx_tx_complete(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
         return;
     }
 
-    if (p_client->is_notification_enabled)
+    if ((p_client->is_notification_enabled) && (p_nus->data_handler != NULL))
     {
         memset(&evt, 0, sizeof(ble_nus_evt_t));
         evt.type        = BLE_NUS_EVT_TX_RDY;

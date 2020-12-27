@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Telit Communications Cyprus Ltd
+ * Copyright (c) 2016 - 2020, Telit Communications Cyprus Ltd
  *
  * All rights reserved.
  *
@@ -113,14 +113,18 @@ typedef enum
     NFC_T4T_EVENT_NDEF_UPDATED,
     ///< External Reader has written to length information of NDEF-Data from Emulation.
     /**<
-     * The usual behavior of a Reader-Writer that accesses NDEF information for update is to set
-     * the length to zero at the beginning of the update process. It then writes the content
-     * of NDEF-Data. When all content is written it will update the length information inside
-     * the NDEF file. This event will be generated every time an update to  the length is happening.
-     * This length information is residing in the first 2 bytes of the NDEF-Content container and is called 'NLEN'.
-     * Since this callback is triggered on any access to these bytes  the returned data_length
-     * information might not be consistent (e.g. in case of only a single byte write to the length).
+     * The usual behavior of a Reader-Writer that accesses NDEF information
+     * for update is to set the length to zero at the beginning of the
+     * update process. It then writes the content of NDEF-Data. When all
+     * content is written it will update the length information inside the
+     * NDEF file. This event will be generated every time an update to the
+     * length is happening. This length information is residing in the first
+     * 2 bytes of the NDEF-Content container and is called 'NLEN'. Since
+     * this callback is triggered on any access to these bytes  the returned
+     * data_length information might not be consistent (e.g. in case of only
+     * a single byte write to the length).
      *
+     * @param[out] data Pointer to current data of NDEF message
      * @param[out] data_length Current value of NDEF content length
      *                         information i.e. 'NLEN' field.
      */
@@ -205,7 +209,11 @@ ret_code_t nfc_t4t_setup(nfc_t4t_callback_t callback, void * p_context);
 /** @brief Set emulation buffer and content for a NDEF Tag emulation that is Read/Writable.
  *
  * The buffer needs to be kept accessible for the lifetime of the emulation.
- * If an external Reader-Writer changes the NDEF content it is signaled through the app-callback.
+ * If an external Reader-Writer changes the NDEF content it is signaled through
+ * the app-callback. Buffer can be changed during the lifetime of the emulation,
+ * when NDEF READ or UPDATE procedure is pending, and it will be changed after
+ * this procedure is finished. To perform this procedure safely use
+ * critical sections or disable the interrupts.
  *
  * @param[in] p_emulation_buffer      Buffer pointer
  * @param[in] buffer_length           Length of buffer (maximum writable NDEF size)
@@ -213,7 +221,8 @@ ret_code_t nfc_t4t_setup(nfc_t4t_callback_t callback, void * p_context);
  * @retval NRF_SUCCESS              Success.
  * @retval NRF_ERROR_DATA_SIZE      Invalid argument (e.g. wrong data length).
  * @retval NRF_ERROR_INVALID_PARAM  Invalid argument (e.g. NULL pointer).
- * @retval NRF_ERROR_INVALID_STATE  If emulation is in running state.
+ * @retval NRF_ERROR_NOT_SUPPORTED  If the new buffer has a different length than the first one.
+ * @retval NRF_ERROR_INVALID_DATA   If the provided buffer is the currently used buffer.
  */
 ret_code_t nfc_t4t_ndef_rwpayload_set(uint8_t * p_emulation_buffer, size_t buffer_length);
 
@@ -253,7 +262,7 @@ ret_code_t nfc_t4t_response_pdu_send(const uint8_t * p_pdu, size_t pdu_length);
 
 /** @brief Set an NFC parameter.
  *
- * Allows to set any parameter defined as available by HAL_NFC.
+ * Allows to set an NFC configuration parameter.
  *
  * @param[in] id                      ID of the parameter to set.
  * @param[in] p_data                  Pointer to a buffer containing the data to set.

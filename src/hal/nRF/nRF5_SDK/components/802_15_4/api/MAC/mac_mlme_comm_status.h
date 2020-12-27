@@ -6,7 +6,7 @@
 // the file.
 
 /**
- * Copyright (c) 2016 - 2019 Nordic Semiconductor ASA and Luxoft Global Operations Gmbh.
+ * Copyright (c) 2016 - 2020 Nordic Semiconductor ASA and Luxoft Global Operations Gmbh.
  *
  * All Rights Reserved.
  *

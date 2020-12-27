@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2014 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -195,12 +195,6 @@ uint32_t app_timer_start(app_timer_id_t timer_id, uint32_t timeout_ticks, void *
     }
     else
     {
-        if (xTimerIsTimerActive(hTimer) != pdFALSE)
-        {
-            // Timer already running - exit silently
-            return NRF_SUCCESS;
-        }
-
         if (xTimerChangePeriod(hTimer, timeout_ticks, APP_TIMER_WAIT_FOR_QUEUE) != pdPASS)
         {
             return NRF_ERROR_NO_MEM;

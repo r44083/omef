@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2014 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -41,7 +41,7 @@
  *
  * @defgroup ble_ipsp Internet Protocol Support Profile
  * @{
- * @ingroup iot_sdk_6lowpan
+ * @ingroup ble_sdk_srv
  * @brief Internet Protocol Support Profile.
  *
  * @details This module implements the Internet Protocol Support Profile creating and managing

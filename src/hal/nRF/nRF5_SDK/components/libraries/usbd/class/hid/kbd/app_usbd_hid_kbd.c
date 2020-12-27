@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -578,6 +578,7 @@ static ret_code_t hid_kbd_on_idle(app_usbd_class_inst_t const * p_inst, uint8_t 
 
     app_usbd_hid_report_buffer_t const * p_rep_buffer = hid_kbd_rep_buffer_get(p_kbd);
     NRF_DRV_USBD_TRANSFER_IN(transfer, p_rep_buffer->p_buff, p_rep_buffer->size);
+    UNUSED_RETURN_VALUE(hid_kbd_transfer_next(p_kbd));
 
     ret_code_t ret;
     CRITICAL_REGION_ENTER();
@@ -598,6 +599,7 @@ const app_usbd_hid_methods_t app_usbd_hid_kbd_methods = {
     .on_set_report              = hid_kbd_on_set_report,
     .ep_transfer_in             = hid_kbd_ep_transfer_in,
     .ep_transfer_out            = NULL,
+    .subclass_count             = hid_kbd_get_class_descriptors_count,
     .subclass_length            = hid_kbd_get_class_descriptors_length,
     .subclass_data              = hid_kbd_get_class_descriptors_data,
     .on_idle                    = hid_kbd_on_idle,

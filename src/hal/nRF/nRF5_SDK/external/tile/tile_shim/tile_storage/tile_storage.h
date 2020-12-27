@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -34,6 +33,7 @@
 
 #include "tile_lib.h"
 #include "nrf_fstorage_sd.h"
+#include "tile_tdt_module.h"
 #include "ble_gap.h"
 
 
@@ -62,6 +62,9 @@
 #define CHECKED_STRUCTURE_VERSION_4   4
 #define CHECKED_STRUCTURE_VERSION     CHECKED_STRUCTURE_VERSION_1
 
+extern nrf_fstorage_t    app_data_bank0;
+extern nrf_fstorage_t    app_data_bank1;
+
 extern        uint8_t bdaddr[BLE_GAP_ADDR_LEN];
 extern const  uint8_t interim_tile_id[];
 extern const  uint8_t interim_tile_key[];
@@ -79,11 +82,14 @@ struct tile_checked_tag
   uint8_t         id;
   uint8_t         bank;
   uint8_t         mode;
+  uint16_t        adv_int;
+  tdt_config_t    tdt_configuration;
   uint8_t         tile_id[TILE_ID_LEN];
   uint8_t         tile_auth_key[TILE_AUTH_KEY_LEN];
   char            model_number[TILE_MODEL_NUMBER_LEN];
   char            hardware_version[TILE_HARDWARE_VERSION_LEN];
   uint8_t         bdaddr[TILE_BDADDR_LEN];
+  uint8_t         tileIDkey[TILEID_KEY_LEN];
 };
 
 struct tile_unchecked_tag 
@@ -107,29 +113,32 @@ struct tile_unchecked_tag
   uint32_t  toa_authenticate_count;     /**< number of TOA Authenticate Commands received */
   uint16_t  tka_closed_channel_count;   /**< number of TOA Channel close triggered by TKA */
   uint16_t  auth_disconnect_count;      /**< number of disconnections triggered by Auth Timer */
+  
+//Counter for private ID
+  uint16_t  tileIDcounter;              /**< Counter used for PrivateID */
 };
 
-struct tile_persist_tag {
+struct tile_persist_tag 
+{
   uint16_t crc;
   uint16_t signature;
   union
   {
     struct tile_checked_tag s;
     uint8_t d[CHECKED_SIZE-4]; /* -4 for CRC + signature */
-  } checked;
+  } checked __attribute__ ((aligned (4)));
   union
   {
     struct tile_unchecked_tag s;
     uint8_t d[UNCHECKED_SIZE];
-  } unchecked;
+  } unchecked __attribute__ ((aligned (4)));
 };
-
 
 /**
  * @brief Persistent structure, which is saved to flash. Does not need to be
  *        accessed directly. Access elements with tile_checked and tile_unchecked.
  */
-extern struct tile_persist_tag tile_persist __attribute__((section("NoInit")));
+extern struct tile_persist_tag tile_persist;
 
 /**
  * @brief CRC checked portion of persistent data.
@@ -149,6 +158,7 @@ struct tile_env_tag
 {
   uint16_t  last_reset_reason;      ///> Contains the reason for the last reset
   uint8_t   authorized;
+  uint8_t   hashedTileID[TILE_HASHED_TILEID_LEN];
 };
 
 extern struct tile_env_tag tile_env;

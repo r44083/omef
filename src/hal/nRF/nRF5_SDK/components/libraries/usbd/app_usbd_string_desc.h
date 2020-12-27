@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -117,6 +117,35 @@ extern "C" {
     ((uint16_t)APP_USBD_DESCRIPTOR_STRING) << 8,                                                   \
     __VA_ARGS__ })
 
+
+#if (APP_USBD_STRING_ID_MANUFACTURER != 0)
+    #define APP_USBD_STRING_ID_MANUFACTURER_LEN 1
+#else
+    #define APP_USBD_STRING_ID_MANUFACTURER_LEN 0
+#endif
+
+#if (APP_USBD_STRING_ID_PRODUCT != 0)
+    #define APP_USBD_STRING_ID_PRODUCT_LEN 1
+#else
+    #define APP_USBD_STRING_ID_PRODUCT_LEN 0
+#endif
+
+#if (APP_USBD_STRING_ID_SERIAL != 0)
+    #define APP_USBD_STRING_ID_SERIAL_LEN 1
+#else
+    #define APP_USBD_STRING_ID_SERIAL_LEN 0
+#endif
+
+#if (APP_USBD_STRING_ID_CONFIGURATION != 0)
+    #define APP_USBD_STRING_ID_CONFIGURATION_LEN 1
+#else
+    #define APP_USBD_STRING_ID_CONFIGURATION_LEN 0
+#endif
+
+/** @brief Total number of USB strings */
+#define APP_USBD_STRINGS_NUM \
+    ((APP_USBD_STRINGS_USER 0) + 1 + APP_USBD_STRING_ID_MANUFACTURER_LEN + APP_USBD_STRING_ID_PRODUCT_LEN + APP_USBD_STRING_ID_SERIAL_LEN + APP_USBD_STRING_ID_CONFIGURATION_LEN)
+
 /**
  * @brief USB string descriptors IDs
  */
@@ -144,9 +173,13 @@ typedef enum {
 #define X(mnemonic, str_idx, ...) mnemonic str_idx,
     APP_USBD_STRINGS_USER
 #undef X
-
-    APP_USBD_STRING_ID_CNT           /**< Total number of identifiers. */
 } app_usbd_string_desc_idx_t;
+
+/** @brief String ID conversion struct */
+typedef struct {
+    uint8_t const identifier;
+    uint8_t const array_pos;
+} app_usbd_strings_convert_t;
 
 /**
  * @brief Get string descriptor.

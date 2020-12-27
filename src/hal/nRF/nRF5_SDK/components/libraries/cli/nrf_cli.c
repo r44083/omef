@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -1990,7 +1990,9 @@ static void cli_state_collect(nrf_cli_t const * p_cli)
                 {
                     if (p_cli->p_ctx->cmd_buff_len == 0)
                     {
+#if NRF_MODULE_ENABLED(NRF_CLI_HISTORY)
                         history_mode_exit(p_cli);
+#endif
                         cursor_next_line_move(p_cli);
                     }
                     else

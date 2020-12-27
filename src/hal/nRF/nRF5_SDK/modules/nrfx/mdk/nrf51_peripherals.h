@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2010 - 2018, Nordic Semiconductor ASA
+Copyright (c) 2010 - 2020, Nordic Semiconductor ASA
 
 All rights reserved.
 
@@ -53,6 +53,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define POWER_FEATURE_RAMON_REGISTERS_PRESENT
 
+/* Non-Volatile Memory Controller */
+#define NVMC_PRESENT
+#define NVMC_COUNT 1
+
 /* Software Interrupts */
 #define SWI_PRESENT
 #define SWI_COUNT 6
@@ -62,6 +66,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GPIO_COUNT 1
 
 #define P0_PIN_NUM 32
+#define P0_FEATURE_PINS_PRESENT 0xFFFFFFFFUL
 
 /* MPU and BPROT */
 #define BPROT_PRESENT
@@ -72,6 +77,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Radio */
 #define RADIO_PRESENT
 #define RADIO_COUNT 1
+
+#define RADIO_TXPOWER_TXPOWER_Max RADIO_TXPOWER_TXPOWER_Pos4dBm
 
 /* Accelerated Address Resolver */
 #define AAR_PRESENT

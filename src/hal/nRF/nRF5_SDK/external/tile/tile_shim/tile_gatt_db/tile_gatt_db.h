@@ -1,7 +1,7 @@
 /**
  * NOTICE
  * 
- * Copyright 2017 Tile Inc.  All Rights Reserved.
+ * Copyright 2020 Tile Inc.  All Rights Reserved.
  * All code or other information included in the accompanying files ("Tile Source Material")
  * is PROPRIETARY information of Tile Inc. ("Tile") and access and use of the Tile Source Material
  * is subject to these terms. The Tile Source Material may only be used for demonstration purposes,
@@ -17,7 +17,6 @@
  * the Tile Source Material.
  *
  * Support: firmware_support@tile.com
- *
  */
 
 /**
@@ -29,18 +28,7 @@
 #define TILE_GATT_DB_H_
 
 #include <stdint.h>
-
-/**
-  * Attribute ID's associated with each Tile attribute.
-  */
-enum TILE_CHARACTERISTICS
-{
-  TILE_ID_CHAR,       // this is here for backward compatibility and should be removed
-  TILE_TOA_CMD_CHAR,
-  TILE_TOA_RSP_CHAR,
-  TILE_TOA_RSP_CCCD,
-  TILE_NUM_ATTRS
-};
+#include "tile_lib.h"
 
 typedef struct
 {

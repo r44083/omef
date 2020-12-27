@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -173,6 +173,9 @@ typedef struct
  * @brief Callback descriptor to pass events from the NFCT driver to the upper layer.
  *
  * @param[in] p_event Pointer to the event descriptor.
+ *
+ * @note @ref NRFX_NFCT_EVT_FIELD_DETECTED and @ref NRFX_NFCT_EVT_FIELD_LOST are generated only on field state transitions,
+ *       i.e. there will be no multiple events of the same type (out of the 2 mentioned) coming in a row.
  */
 typedef void (*nrfx_nfct_handler_t)(nrfx_nfct_evt_t const * p_event);
 

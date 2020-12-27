@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2010 - 2018, Nordic Semiconductor ASA
+Copyright (c) 2010 - 2020, Nordic Semiconductor ASA
 
 All rights reserved.
 
@@ -44,6 +44,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*lint ++flb "Enter library region" */
 
+#ifndef NRF_STRING_CONCATENATE_IMPL
+    #define NRF_STRING_CONCATENATE_IMPL(lhs, rhs) lhs ## rhs
+#endif
+#ifndef NRF_STRING_CONCATENATE
+    #define NRF_STRING_CONCATENATE(lhs, rhs) NRF_STRING_CONCATENATE_IMPL(lhs, rhs)
+#endif
+#if  __LINT__ == 1
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg)
+    #endif
+#endif
+
 #if defined ( __CC_ARM )
 
     #ifndef __ASM
@@ -66,7 +78,16 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define __PACKED            __packed
     #endif
 
+    #ifndef __UNUSED
+        #define __UNUSED            __attribute__((unused))
+    #endif
+
     #define GET_SP()                __current_sp()
+
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg) \
+            ;enum { NRF_STRING_CONCATENATE(static_assert_on_line_, __LINE__) = 1 / (!!(cond)) }
+    #endif
     
 #elif defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
 
@@ -90,7 +111,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define __PACKED            __attribute__((packed, aligned(1)))
     #endif
 
+    #ifndef __UNUSED
+        #define __UNUSED            __attribute__((unused))
+    #endif
+
     #define GET_SP()                __current_sp()
+
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+    #endif
 
 #elif defined ( __ICCARM__ )
 
@@ -114,10 +143,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #ifndef __PACKED
         #define __PACKED            __packed
     #endif
+
+    #ifndef __UNUSED
+        #define __UNUSED
+    #endif
     
     #define GET_SP()                __get_SP()
 
-#elif defined   ( __GNUC__ )
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+    #endif
+
+#elif defined   ( __GNUC__ ) ||  defined   ( __clang__ )
 
     #ifndef __ASM
         #define __ASM               __asm
@@ -139,13 +176,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define __PACKED           __attribute__((packed)) 
     #endif
 
+    #ifndef __UNUSED
+        #define __UNUSED            __attribute__((unused))
+    #endif
+
     #define GET_SP()                gcc_current_sp()
 
     static inline unsigned int gcc_current_sp(void)
     {
-        register unsigned sp __ASM("sp");
-        return sp;
+        unsigned int stack_pointer = 0;
+        __asm__ __volatile__ ("mov %0, sp" : "=r"(stack_pointer));
+        return stack_pointer;
     }
+
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+    #endif
 
 #elif defined   ( __TASKING__ )
 
@@ -170,9 +216,33 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define __PACKED
     #endif
 
+    #ifndef __UNUSED
+        #define __UNUSED            __attribute__((unused))
+    #endif
+
     #define GET_SP()                __get_MSP()
 
+    #ifndef NRF_STATIC_ASSERT
+        #define NRF_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+    #endif
+
 #endif
+
+#define NRF_MDK_VERSION_ASSERT_AT_LEAST(major, minor, micro) \
+    NRF_STATIC_ASSERT( \
+        ( \
+            (major < MDK_MAJOR_VERSION) || \
+            (major == MDK_MAJOR_VERSION && minor < MDK_MINOR_VERSION) || \
+            (major == MDK_MAJOR_VERSION && minor == MDK_MINOR_VERSION && micro < MDK_MICRO_VERSION) \
+        ), "MDK version mismatch.")
+
+#define NRF_MDK_VERSION_ASSERT_EXACT(major, minor, micro) \
+    NRF_STATIC_ASSERT( \
+        ( \
+            (major != MDK_MAJOR_VERSION) || \
+            (major != MDK_MAJOR_VERSION) || \
+            (major != MDK_MAJOR_VERSION) \
+        ), "MDK version mismatch.")
 
 /*lint --flb "Leave library region" */
 

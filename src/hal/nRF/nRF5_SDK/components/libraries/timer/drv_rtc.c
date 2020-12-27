@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -320,6 +320,11 @@ bool drv_rtc_compare_pending(drv_rtc_t const * const p_instance, uint32_t cc)
 {
     nrf_rtc_event_t cc_evt = CC_IDX_TO_CC_EVENT(cc);
     return evt_pending(p_instance, cc_evt);
+}
+
+uint32_t drv_rtc_compare_get(drv_rtc_t const * const p_instance, uint32_t cc)
+{
+    return nrf_rtc_cc_get(p_instance->p_reg, cc);
 }
 
 uint32_t drv_rtc_counter_get(drv_rtc_t const * const p_instance)

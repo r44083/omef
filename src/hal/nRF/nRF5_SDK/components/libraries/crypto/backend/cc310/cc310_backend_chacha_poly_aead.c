@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -178,8 +178,6 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
         goto exit;
     }
 
-    cc310_backend_enable();
-
     result = CRYS_CHACHA_POLY(p_nonce,
                               p_ctx->key,
                               operation_cc310,
@@ -189,7 +187,6 @@ static ret_code_t backend_cc310_crypt(void * const           p_context,
                               data_in_size,
                               p_data_out,
                               (uint32_t *)p_mac);
-    cc310_backend_disable();
 
     ret_val = result_get(result);
 

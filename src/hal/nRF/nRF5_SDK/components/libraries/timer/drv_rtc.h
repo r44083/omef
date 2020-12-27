@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 - 2019, Nordic Semiconductor ASA
+ * Copyright (c) 2018 - 2020, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -279,6 +279,16 @@ void drv_rtc_compare_disable(drv_rtc_t const * const p_instance, uint32_t cc);
  * @return True if interrupt pending, false otherwise.
  */
 bool drv_rtc_compare_pending(drv_rtc_t const * const p_instance, uint32_t cc);
+
+/**
+ * @brief Function for reading compare value.
+ *
+ * @param[in] p_instance Pointer to the driver instance structure.
+ * @param[in] cc         Compare channel index.
+ *
+ * @return Compare value set for given channel.
+ */
+uint32_t drv_rtc_compare_get(drv_rtc_t const * const p_instance, uint32_t cc);
 
 /**
  * @brief Function for getting current value of RTC counter.
