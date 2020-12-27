@@ -1,5 +1,8 @@
 set(TARGET hal)
 
+add_subdirectory(CMSIS)
+#add_subdirectory(CMSIS/DSP)
+
 add_library(${TARGET} STATIC
     adc/adc.cpp
     dac/dac.cpp
@@ -24,4 +27,5 @@ target_link_libraries(${TARGET}
         freertos
     PRIVATE
         cmsis
+        #cmsis-dsp-lib
 )

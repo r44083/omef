@@ -19,7 +19,8 @@ target_link_libraries(${TARGET}
     PUBLIC
         hal
         freertos
-    PRIVATE
         nmea
+    PRIVATE
+        gpgga gpgll gpgsv gprmc
         printf
 )

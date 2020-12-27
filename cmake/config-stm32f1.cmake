@@ -18,12 +18,8 @@ add_compile_options(
 include_directories(./src)
 
 add_subdirectory(src/drv)
-add_subdirectory(src/hal/STM32F1)
-
 set(DEVICE_DEF STM32F100xB)
-add_subdirectory(src/hal/STM32F1/CMSIS)
-#add_subdirectory(src/hal/STM32F1/CMSIS/DSP)
-
+add_subdirectory(src/hal/STM32F1)
 add_subdirectory(src/third_party/FreeRTOS)
 
 # libnmea is a drv/gps/nmea dependency
@@ -51,12 +47,6 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     drv
     hal
-    cmsis
-    #cmsis-dsp-lib
-    freertos
-    nmea
-    fatfs
-    printf
     fatfs_diskio
     syslog
 )

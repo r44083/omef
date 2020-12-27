@@ -1,5 +1,8 @@
 set(TARGET hal)
 
+add_subdirectory(CMSIS)
+#add_subdirectory(CMSIS/DSP)
+
 add_library(${TARGET} STATIC
     dma/dma.cpp
     exti/exti.cpp
@@ -21,4 +24,5 @@ target_link_libraries(${TARGET}
         freertos
     PRIVATE
         cmsis
+        #cmsis-dsp-lib
 )
