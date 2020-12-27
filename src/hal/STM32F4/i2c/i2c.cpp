@@ -406,6 +406,9 @@ extern "C" void i2c_error_irq_hndlr(i2c *obj)
 		vTracePrint(ch1, "AF irq");
 #endif
 		// No ACK from device
+		// NAK irq flag doesn't work during receiving using DMA.
+		// When slave sends NAK, master still wait for some data.
+		// Maybe problem in I2C_CR2_LAST?
 		i2c->SR1 &= ~I2C_SR1_AF;
 		err_hndlr(obj, i2c::RES_NO_ACK, &hi_task_woken);
 	}
