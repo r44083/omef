@@ -1,6 +1,7 @@
 # Main cmake file for project based on STM32F4
 cmake_minimum_required(VERSION 3.8)
 
+# NOTE: if config-x86.cmake is used, no toolchain file is required
 set(CMAKE_TOOLCHAIN_FILE cmake/toolchain-arm-gcc-cortex.cmake)
 
 get_filename_component(CURRENT_DIRNAME "${CMAKE_CURRENT_LIST_DIR}" NAME)
