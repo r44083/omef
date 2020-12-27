@@ -7,9 +7,16 @@ namespace hal
 class gpio
 {
 	public:
-		enum class mode {DO, OD, DI, AN, AF};
-		static constexpr auto ports = 11; // GPIOK
-		static constexpr auto pins = 16;
+		enum class mode
+		{
+			DO, /**< Digital output */
+			OD, /**< Open drain */
+			DI, /**< Digital input */
+			AN, /**< Analog mode */
+			AF  /**< Alternate function */
+		};
+		static constexpr auto ports = 11; /**< GPIOK - the last gpio port */
+		static constexpr auto pins = 16;  /**< The total number of pins */
 		
 		gpio(uint8_t port, uint8_t pin, mode mode, bool state = false);
 		~gpio();
