@@ -62,7 +62,7 @@ int main(void)
 	
 	static drv::nmea gps(uart3, tskIDLE_PRIORITY + 1);
 	
-	gps_task_ctx_t gps_task_ctx = {.led = &green_led, .nmea = &gps};
+	gps_task_ctx_t gps_task_ctx = {.nmea = &gps, .led = &green_led};
 	
 	xTaskCreate(gps_task, "gps", configMINIMAL_STACK_SIZE + 50, &gps_task_ctx,
 		1, NULL);
