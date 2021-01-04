@@ -4,7 +4,7 @@ endif()
 
 add_custom_target(flash
     COMMENT "Programming ${CMAKE_PROJECT_NAME}.bin"
-    COMMAND echo r>script.jlink
+    COMMAND echo h>script.jlink
     COMMAND echo loadbin ${CMAKE_PROJECT_NAME}.bin, 0 >>script.jlink
     COMMAND echo r>>script.jlink
     COMMAND echo q>>script.jlink
