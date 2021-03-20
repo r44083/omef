@@ -1,4 +1,5 @@
 BUILD_DIR := build
+BUILD_TYPE := Debug
 
 ifeq ($(OS),Windows_NT)
 CMAKE_GENERATOR := "MinGW Makefiles"
@@ -7,8 +8,8 @@ CMAKE_GENERATOR := "Unix Makefiles"
 endif
 
 all:
-	cmake . -B$(BUILD_DIR) -G $(CMAKE_GENERATOR)
-	make -C $(BUILD_DIR) -j --no-print-directory
+	cmake . -B$(BUILD_DIR) -G $(CMAKE_GENERATOR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	cmake --build $(BUILD_DIR) -j $(NUMBER_OF_PROCESSORS)
 
 clean:
 ifeq ($(OS),Windows_NT)
