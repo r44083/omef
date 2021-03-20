@@ -1,12 +1,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include "syslog.hpp"
 #include "common/assert.h"
 #include "third_party/printf/printf.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include <algorithm>
 
 using namespace ul;
 
