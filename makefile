@@ -20,4 +20,4 @@ else
 endif
 
 flash erase reset debug:
-	$(MAKE) -C $(BUILD_DIR) --no-print-directory $@
+	cmake --build $(BUILD_DIR) --target $@
