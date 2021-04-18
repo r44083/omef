@@ -1,0 +1,26 @@
+diff --git a/components/esptool_py/CMakeLists.txt b/components/esptool_py/CMakeLists.txt
+index d3021053..8ce8648e 100644
+--- a/components/esptool_py/CMakeLists.txt
++++ b/components/esptool_py/CMakeLists.txt
+@@ -67,7 +67,7 @@ if(NOT BOOTLOADER_BUILD)
+                                     FLASH_FILE_TEMPLATE ${CMAKE_CURRENT_BINARY_DIR}/flash_encrypted_app_args.in)
+     endif()
+ 
+-    add_dependencies(flash partition_table)
++    add_dependencies(flash2 partition_table)
+ 
+     # If anti-rollback option is set then factory partition should not be in Partition Table.
+     # In this case, should be used the partition table with two ota app without the factory.
+diff --git a/components/esptool_py/project_include.cmake b/components/esptool_py/project_include.cmake
+index 172628f0..b500a163 100644
+--- a/components/esptool_py/project_include.cmake
++++ b/components/esptool_py/project_include.cmake
+@@ -144,7 +144,7 @@ function(esptool_py_custom_target target_name flasher_filename dependencies)
+         )
+ endfunction()
+ 
+-esptool_py_custom_target(flash project "app;partition_table;bootloader")
++esptool_py_custom_target(flash2 project "app;partition_table;bootloader")
+ esptool_py_custom_target(app-flash app "app")
+ 
+ if(CONFIG_SECURE_FLASH_ENCRYPTION_MODE_DEVELOPMENT)

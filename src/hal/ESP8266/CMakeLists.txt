@@ -12,8 +12,11 @@ target_include_directories(${TARGET} PUBLIC
     .
 )
 
-
 # ESP8266_RTOS_SDK
+execute_process(COMMAND git apply ../ESP8266_RTOS_SDK.patch
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ESP8266_RTOS_SDK
+    ERROR_QUIET
+)
 include(ESP8266_RTOS_SDK/tools/cmake/idf.cmake)
 idf_build_process(esp8266
     SDKCONFIG ${CMAKE_BINARY_DIR}/sdkconfig
