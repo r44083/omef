@@ -4,3 +4,6 @@
 [submodule "src/hal/RP2040/pico-sdk"]
 	path = src/hal/RP2040/pico-sdk
 	url = https://github.com/raspberrypi/pico-sdk.git
+[submodule "src/hal/ESP32/esp-idf"]
+	path = src/hal/ESP32/esp-idf
+	url = https://github.com/espressif/esp-idf.git
