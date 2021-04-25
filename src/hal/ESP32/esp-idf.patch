@@ -1,0 +1,49 @@
+diff --git a/components/bootloader/CMakeLists.txt b/components/bootloader/CMakeLists.txt
+index d8ea49c95..dea9aaf3f 100644
+--- a/components/bootloader/CMakeLists.txt
++++ b/components/bootloader/CMakeLists.txt
+@@ -19,7 +19,7 @@ esptool_py_flash_target_image(bootloader-flash bootloader
+ 
+ # Also attach an image to the project flash target
+ if(NOT CONFIG_SECURE_BOOT)
+-    esptool_py_flash_target_image(flash bootloader
++    esptool_py_flash_target_image(flash2 bootloader
+         ${CONFIG_BOOTLOADER_OFFSET_IN_FLASH}
+         "${BOOTLOADER_BUILD_DIR}/bootloader.bin")
+ endif()
+diff --git a/components/esptool_py/CMakeLists.txt b/components/esptool_py/CMakeLists.txt
+index 3b588b7c9..5e1482a40 100644
+--- a/components/esptool_py/CMakeLists.txt
++++ b/components/esptool_py/CMakeLists.txt
+@@ -8,7 +8,7 @@ if(NOT BOOTLOADER_BUILD)
+         esptool_py_custom_target(app-flash app "app")
+ 
+         esptool_py_flash_target_image(app-flash app "${app_partition_offset}" "${build_dir}/${PROJECT_BIN}")
+-        esptool_py_flash_target_image(flash app "${app_partition_offset}" "${build_dir}/${PROJECT_BIN}")
++        esptool_py_flash_target_image(flash2 app "${app_partition_offset}" "${build_dir}/${PROJECT_BIN}")
+     endif()
+ 
+     # If anti-rollback option is set then factory partition should not be in Partition Table.
+diff --git a/components/esptool_py/project_include.cmake b/components/esptool_py/project_include.cmake
+index d3196900f..d44001860 100644
+--- a/components/esptool_py/project_include.cmake
++++ b/components/esptool_py/project_include.cmake
+@@ -476,5 +476,5 @@ if(NOT BOOTLOADER_BUILD)
+         list(APPEND flash_deps "bootloader")
+     endif()
+ 
+-    esptool_py_custom_target(flash project "${flash_deps}")
++    esptool_py_custom_target(flash2 project "${flash_deps}")
+ endif()
+diff --git a/components/partition_table/CMakeLists.txt b/components/partition_table/CMakeLists.txt
+index 113728f41..211e5ea98 100644
+--- a/components/partition_table/CMakeLists.txt
++++ b/components/partition_table/CMakeLists.txt
+@@ -101,6 +101,6 @@ if(CONFIG_APP_BUILD_GENERATE_BINARIES)
+     esptool_py_flash_target(partition_table-flash "${main_args}" "${sub_args}")
+     esptool_py_flash_target_image(partition_table-flash partition_table "${PARTITION_TABLE_OFFSET}"
+                                         "${build_dir}/partition_table/${final_partition_bin}")
+-    esptool_py_flash_target_image(flash partition_table "${PARTITION_TABLE_OFFSET}"
++    esptool_py_flash_target_image(flash2 partition_table "${PARTITION_TABLE_OFFSET}"
+                                         "${build_dir}/partition_table/${final_partition_bin}")
+ endif()
