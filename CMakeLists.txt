@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 # NOTE: if config-x86.cmake is used, no toolchain file is required
-set(CMAKE_TOOLCHAIN_FILE cmake/toolchain-arm-gcc-cortex.cmake)
+set(CMAKE_TOOLCHAIN_FILE cmake/toolchains/toolchain-arm-gcc-cortex.cmake)
 
 get_filename_component(CURRENT_DIRNAME "${CMAKE_CURRENT_LIST_DIR}" NAME)
 project(${CURRENT_DIRNAME} C CXX ASM)
