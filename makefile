@@ -7,7 +7,6 @@ else
 CMAKE_GENERATOR ?= "Unix Makefiles"
 NUMBER_OF_PROCESSORS = $(shell grep -c ^processor /proc/cpuinfo)
 endif
-export IDF_PATH ?= ${CURDIR}/src/hal/ESP8266/ESP8266_RTOS_SDK
 
 all:
 	cmake . -B$(BUILD_DIR) -G $(CMAKE_GENERATOR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
