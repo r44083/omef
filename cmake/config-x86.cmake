@@ -47,6 +47,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-    COMMENT "Post build steps for ${CMAKE_PROJECT_NAME}"
     COMMAND size $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
 )

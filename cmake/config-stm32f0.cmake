@@ -53,7 +53,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SUFFIX ".elf")
 add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-    COMMENT "Post build steps for ${CMAKE_PROJECT_NAME}"
     COMMAND ${CMAKE_SIZE} ${CMAKE_PROJECT_NAME}.elf
     COMMAND ${CMAKE_OBJCOPY} -O binary ${CMAKE_PROJECT_NAME}.elf "${CMAKE_PROJECT_NAME}.bin"
 )
