@@ -1,3 +1,6 @@
 [submodule "src/hal/ESP8266/ESP8266_RTOS_SDK"]
 	path = src/hal/ESP8266/ESP8266_RTOS_SDK
 	url = https://github.com/espressif/ESP8266_RTOS_SDK.git
+[submodule "src/hal/RP2040/pico-sdk"]
+	path = src/hal/RP2040/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
